@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  e-fatura-sistemi:
+    build: .
+    ports:
+      - "7080:7080"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://localhost:27017/efatura
+      - JWT_SECRET=efatura-secret-key-2024-secure-token
+      - GIB_API_URL=https://efatura-test.gib.gov.tr
+      - GIB_API_USERNAME=test-user
+      - GIB_API_PASSWORD=test-password
+      - GIB_API_ALIAS=test-alias
+      - GMAIL_CLIENT_ID=your-gmail-client-id
+      - GMAIL_CLIENT_SECRET=your-gmail-client-secret
+      - GMAIL_REDIRECT_URI=http://localhost:7080/api/auth/google/callback
+      - OCR_SERVICE_URL=https://vision.googleapis.com/v1/images:annotate
+      - OCR_API_KEY=your-ocr-api-key
+      - NEXT_PUBLIC_APP_URL=http://localhost:7080
+      - NEXT_PUBLIC_APP_NAME=E-Fatura Sistemi
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongodb_data:

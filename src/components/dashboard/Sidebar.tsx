@@ -19,6 +19,7 @@ import {
   Wallet,
   Mail,
   Camera,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Cari Hesaplar', href: '/dashboard/contacts', icon: Users },
   { name: 'Raporlar', href: '/dashboard/reports', icon: TrendingUp },
   { name: 'Banka & Kasa', href: '/dashboard/bank', icon: Wallet },
+  { name: 'Fatura Sağlayıcıları', href: '/dashboard/bill-providers', icon: Zap },
   { name: 'E-posta', href: '/dashboard/email', icon: Mail },
   { name: 'OCR Okuma', href: '/dashboard/ocr', icon: Camera },
   { name: 'Ayarlar', href: '/dashboard/settings', icon: Settings },

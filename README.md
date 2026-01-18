@@ -1,191 +1,406 @@
-# E-Fatura Sistemi
+# Türkiye E-Fatura Entegrasyonlu Ön Muhasebe Sistemi
 
 Türkiye'deki firmalar için kapsamlı bir ön muhasebe ve e-fatura yönetim sistemi.
 
-## Özellikler
+## 🚀 Özellikler
 
-### Temel Özellikler
+### E-Fatura Entegrasyonu
+- GİB (Gelir İdaresi Başkanlığı) e-Fatura API entegrasyonu
+- E-Arşiv fatura oluşturma ve erşivine erişim
+- Gelen e-faturaları otomatik alma
+- Fatura durumu takibi (gönderildi, okundu, kabul edildi, reddedildi)
 
-- ✅ **GİB E-Fatura Entegrasyonu** - Gelir İdaresi Başkanlığı e-Fatura sistemi ile tam entegrasyon
-- ✅ **OCR ile Fatura Tanıma** - Fatura fotoğraflarını otomatik olarak okuma
-- ✅ **Gmail Entegrasyonu** - Gelen e-postaları otomatik tarama ve işleme
-- ✅ **Fatura Yönetimi** - Alış/satış faturaları oluşturma, düzenleme ve yönetme
-- ✅ **Cari Hesap Yönetimi** - Müşteri ve tedarikçi cari hesapları
-- ✅ **Detaylı Raporlama** - Gelir-gider, KDV ve diğer raporlar
-- ✅ **Admin Paneli** - Kullanıcı ve firma yönetimi
-- ✅ **KVKK Uyumu** - Kişisel veri koruma yasalarına tam uyum
+### Fatura Yönetimi
+- Alış ve satış faturaları oluşturma
+- Fatura şablonları ve özelleştirme
+- Geçmiş faturaları görüntüleme, filtreleme ve arama
+- Fatura düzenleme ve iptal işlemleri
+- KDV, stopaj ve diğer vergi hesaplamaları
+- Fatura PDF çıktısı ve yazdırma
 
-### Teknoloji Stack
+### Akıllı Fatura Tanıma (OCR)
+- Mobil ve web üzerinden fatura fotoğrafı/görsel yükleme
+- OCR teknolojisi ile fatura bilgilerini otomatik okuma
+- Firma adı, vergi numarası, tarih, tutar, KDV gibi bilgileri tanıma
+- Manuel düzeltme imkanı
+- Toplu fatura yükleme desteği
 
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Lucide Icons
-- **Backend**: Next.js API Routes
-- **Database**: MongoDB, Mongoose
-- **Authentication**: JWT, bcryptjs
+### E-posta Entegrasyonu
+- Sisteme özel Gmail hesabı bağlama
+- Gelen e-postaların otomatik taranması
+- E-posta eklerindeki faturaları (PDF, resim) tespit etme
+- Fatura içeren e-postaları otomatik işleme
+- İçerikten fatura bilgisi çıkarma (parsing)
 
-## Kurulum
+### Mobil Uyumluluk
+- Tam responsive tasarım
+- Mobil cihazlardan kolay kullanım
+- Kamera ile fatura çekme ve anında yükleme
+- Push notification desteği (fatura bildirimleri)
+- Offline mod desteği (temel işlemler için)
 
-### Gereksinimler
+### Admin Panel
+- Kullanıcı yönetimi (ekleme, silme, yetkilendirme)
+- Firma bilgileri yönetimi
+- E-fatura entegrasyon ayarları
+- Gmail bağlantı ayarları
+- Şirket logosu ve fatura şablonu özelleştirme
+- Vergi oranları ve parametre ayarları
+- Sistem logları ve hata takibi
+- Raporlama ve istatistikler
+- Yedekleme ve geri yükleme
 
-- Node.js 18 veya üzeri
-- MongoDB 4.4 veya üzeri
-- npm veya yarn
+### Raporlama ve Analiz
+- Gelir-gider raporları
+- Aylık/yıllık fatura özetleri
+- KDV raporları
+- Müşteri/tedarikçi bazlı analizler
+- Nakit akışı raporları
+- Grafik ve görselleştirmeler
+- Excel/PDF export
 
-### Adımlar
+### Ön Muhasebe İşlemleri
+- Cari hesap yönetimi
+- Tahsilat ve ödeme takibi
+- Vade takibi ve hatırlatıcılar
+- Banka hesap hareketleri
+- Kasa yönetimi
+- Basit gelir-gider tablosu
 
-1. Projeyi klonlayın:
-```bash
-git clone <repository-url>
-cd e-fatura-sistemi
-```
+## 🛠️ Teknik Gereksinimler
 
-2. Bağımlılıkları yükleyin:
-```bash
-npm install
-```
+### Frontend
+- Next.js 16 ile modern React uygulaması
+- TypeScript ile tip güvenliği
+- Tailwind CSS ile hızlı stil
+- shadcn/ui component kütüphanesi
+- PWA (Progressive Web App) desteği
+- Performans odaklı geliştirme
 
-3. Ortam değişkenlerini ayarlayın:
-```bash
-cp .env.example .env
-```
+### Güvenlik
+- HTTPS zorunluluğu
+- JWT token authentication
+- Veri şifreleme
+- KVKK uyumlu veri yönetimi
+- XSS ve CSRF koruması
+- Rate limiting
 
-`.env` dosyasını düzenleyin:
-```env
-MONGODB_URI=mongodb://localhost:27017/efatura
-JWT_SECRET=your-secret-key-here
-```
+### Kullanıcı Deneyimi
+- Türkçe dil desteği
+- Kolay ve sezgisel arayüz
+- Hızlı yükleme süreleri
+- Hata mesajları ve yönlendirmeler
+- Yardım ve ipuçları
+- Onboarding (ilk kullanım) rehberi
 
-4. MongoDB'yi başlatın:
-```bash
-# Windows
-mongod
+### Entegrasyonlar
+- GİB e-Fatura API
+- Gmail API
+- OCR servisi (Google Vision API veya Tesseract)
+- SMS/E-posta bildirimleri
+- Ödeme gateway (iyzico, PayTR)
 
-# Linux/Mac
-sudo systemctl start mongodb
-```
-
-5. Geliştirme sunucusunu başlatın:
-```bash
-npm run dev
-```
-
-6. Tarayıcıda açın:
-```
-http://localhost:3000
-```
-
-## Proje Yapısı
+## 📦 Proje Yapısı
 
 ```
 e-fatura-sistemi/
+├── public/                 # Statik dosyalar
 ├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/             # API Routes
-│   │   │   ├── auth/        # Authentication API
-│   │   │   ├── invoices/    # Invoice API
-│   │   │   └── contacts/     # Contact API
-│   │   ├── dashboard/       # Dashboard sayfaları
-│   │   ├── admin/          # Admin paneli
-│   │   ├── login/          # Giriş sayfası
-│   │   ├── register/       # Kayıt sayfası
-│   │   └── page.tsx        # Ana sayfa (landing page)
-│   ├── components/             # React bileşenleri
+│   ├── app/              # Next.js App Router sayfaları
+│   │   ├── page.tsx          # Ana sayfa (Landing)
+│   │   ├── login/           # Giriş sayfası
+│   │   ├── register/        # Kayıt sayfası
+│   │   ├── dashboard/       # Dashboard
+│   │   │   ├── invoices/     # Fatura yönetimi
+│   │   │   ├── contacts/      # Cari hesaplar
+│   │   │   ├── bank/          # Banka & Kasa
+│   │   │   ├── reports/       # Raporlar
+│   │   │   ├── ocr/           # OCR fatura okuma
+│   │   │   ├── email/         # E-posta entegrasyonu
+│   │   │   └── settings/      # Ayarlar
+│   │   └── admin/           # Admin panel
+│   ├── api/               # API route'ları
+│   │   ├── auth/           # Authentication API
+│   │   ├── invoices/       # Fatura API
+│   │   ├── contacts/       # Cari hesap API
+│   │   ├── gib/            # GİB API test
+│   │   └── gmail/          # Gmail API test
+│   ├── components/
 │   │   ├── ui/            # shadcn/ui bileşenleri
-│   │   ├── landing/       # Landing page bileşenleri
-│   │   └── dashboard/     # Dashboard bileşenleri
-│   ├── lib/                   # Yardımcı fonksiyonlar
-│   │   ├── auth.ts        # Authentication fonksiyonları
-│   │   ├── mongodb.ts     # MongoDB bağlantısı
-│   │   └── utils.ts       # Utility fonksiyonlar
-│   ├── models/                # Mongoose modelleri
-│   │   ├── User.ts
-│   │   ├── Company.ts
-│   │   ├── Invoice.ts
-│   │   └── Contact.ts
-│   ├── types/                 # TypeScript tipleri
-│   │   └── index.ts
-│   ├── layout.tsx             # Root layout
-│   ├── globals.css            # Global stiller
-│   └── middleware.ts          # Next.js middleware
-├── public/                   # Statik dosyalar
-├── .env.example              # Ortam değişkenleri örneği
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-└── next.config.ts
+│   │   ├── dashboard/      # Dashboard bileşenleri
+│   │   └── landing/       # Landing page bileşenleri
+│   ├── lib/
+│   │   ├── auth.ts         # JWT token işlemleri
+│   │   ├── mongodb.ts       # MongoDB bağlantısı
+│   │   ├── gib.ts          # GİB API servisi
+│   │   ├── gmail.ts         # Gmail API servisi
+│   │   ├── ocr.ts          # OCR servisi
+│   │   ├── export.ts       # PDF/Excel export
+│   │   └── utils.ts        # Yardımcı fonksiyonları
+│   ├── models/
+│   │   ├── User.ts          # Kullanıcı modeli
+│   │   ├── Company.ts       # Şirket modeli
+│   │   ├── Invoice.ts      # Fatura modeli
+│   │   └── Contact.ts      # Cari hesap modeli
+│   ├── types/
+│   │   └── index.ts        # TypeScript tipleri
+│   ├── middleware.ts          # Authentication middleware
+│   ├── .env                 # Ortam değişkenleri
+│   ├── .gitignore          # Git ignore dosyası
+│   ├── next.config.ts       # Next.js konfigürasyonu
+│   ├── tsconfig.json        # TypeScript konfigürasyonu
+│   ├── package.json         # Bağımlılıklar
+│   ├── postcss.config.mjs  # Tailwind CSS konfigürasyonu
+│   ├── docker-compose.yml  # Docker konfigürasyonu
+│   └── deploy.sh           # Deployment script
+└── README.md             # Bu dosya
 ```
 
-## Kullanım
+## 🚀 Kurulum ve Kullanım
 
-### Giriş Yapma
+### Yerel Geliştirme
 
-1. `/login` sayfasına gidin
-2. E-posta ve şifrenizi girin
-3. Veya Google ile giriş yapın
+1. **Bağımlılıkları Yükleme**
+   ```bash
+   cd e-fatura-sistemi
+   npm install
+   ```
 
-### Fatura Oluşturma
+2. **Ortam Değişkenleri Ayarlama**
+   
+   `.env` dosyasını oluşturun ve şu değerleri düzenleyin:
+   ```env
+   # MongoDB Connection String
+   MONGODB_URI=mongodb://localhost:27017/efatura
+   
+   # JWT Secret
+   JWT_SECRET=guvenli-anahtar-buraya-yazin
+   
+   # GIB API Settings
+   GIB_API_URL=https://efatura-test.gib.gov.tr
+   GIB_API_USERNAME=your-gib-username
+   GIB_API_PASSWORD=your-gib-password
+   GIB_API_ALIAS=your-gib-alias
+   
+   # Gmail API Settings
+   GMAIL_CLIENT_ID=your-gmail-client-id
+   GMAIL_CLIENT_SECRET=your-gmail-client-secret
+   GMAIL_REDIRECT_URI=http://localhost:7080/api/auth/google/callback
+   
+   # OCR Service Settings
+   OCR_SERVICE_URL=https://vision.googleapis.com/v1/images:annotate
+   OCR_API_KEY=your-ocr-api-key
+   
+   # App Settings
+   NEXT_PUBLIC_APP_URL=http://localhost:7080
+   NEXT_PUBLIC_APP_NAME=E-Fatura Sistemi
+   
+   # Server Port
+   PORT=7080
+   ```
 
-1. Dashboard'a gidin
-2. "Yeni Fatura" butonuna tıklayın
-3. Müşteri bilgilerini doldurun
-4. Fatura kalemlerini ekleyin
-5. Kaydet veya GİB'e gönderin
+3. **Geliştirme Sunucusunu Başlatma**
+   ```bash
+   cd e-fatura-sistemi
+   npm run dev
+   ```
+   
+   Sistem şu adreste çalışacaktır: http://localhost:7080
 
-### OCR ile Fatura Okuma
+4. **MongoDB Başlatma** (eğer yerel MongoDB kullanıyorsanız)
+   ```bash
+   # Windows
+   mongod --dbpath C:\data\db
+   
+   # Linux/Mac
+   sudo systemctl start mongodb
+   ```
 
-1. Fatura fotoğrafını veya PDF'ini yükleyin
-2. Sistem otomatik olarak bilgileri tanır
-3. Gerekirse düzeltmeleri yapın
-4. Kaydedin
+### Sunucuya Deployment
 
-## API Endpoints
+#### Yöntem 1: SSH ile Manuel Deployment
 
-### Authentication
+1. **Deployment Script'i Özelleştirin**
+   
+   `deploy.sh` dosyasını açın ve şu bilgileri düzenleyin:
+   ```bash
+   # Sunucu bilgileri
+   SERVER_USER="kullanici"           # SSH kullanıcı adınız
+   SERVER_IP="sunucu-ip-adresi"    # Sunucu IP adresi
+   SERVER_PATH="/var/www/accounting.innovmar.cloud"  # Proje yolu sunucuda
+   SSH_KEY="$HOME/.ssh/id_rsa"         # SSH anahtar yolu
+   
+   # GitHub repository
+   GITHUB_REPO="KULLANICI_ADINIZ/e-fatura-sistemi.git"  # GitHub repository adınız
+   GITHUB_BRANCH="main"                         # Branch adı
+   ```
 
-- `POST /api/auth/login` - Giriş yapma
-- `POST /api/auth/register` - Kayıt olma
+2. **Script'i Sunucuya Yükleme**
+   ```bash
+   scp deploy.sh kullanici@sunucu-ip-adresi:/home/kullanici/
+   ```
 
-### Invoices
+3. **Deployment Script'ini Çalıştırma**
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
 
-- `GET /api/invoices` - Faturaları listeleme
-- `POST /api/invoices` - Yeni fatura oluşturma
+#### Yöntem 2: Docker ile Deployment
 
-### Contacts
+1. **Docker Compose Dosyasını Özelleştirin**
+   
+   `docker-compose.yml` dosyası zaten projeye dahil edilmiştir. İhtiyacınıza göre düzenleyin:
+   ```yaml
+   version: '3.8'
+   
+   services:
+     e-fatura-sistemi:
+       build: .
+       ports:
+         - "7080:7080"
+       environment:
+         - NODE_ENV=production
+         - MONGODB_URI=mongodb://mongodb:27017/efatura
+         - JWT_SECRET=guvenli-anahtar-buraya-yazin
+         - GIB_API_URL=https://efatura-test.gib.gov.tr
+         - GIB_API_USERNAME=test-user
+         - GIB_API_PASSWORD=test-password
+         - GIB_API_ALIAS=test-alias
+         - GMAIL_CLIENT_ID=your-gmail-client-id
+         - GMAIL_CLIENT_SECRET=your-gmail-client-secret
+         - GMAIL_REDIRECT_URI=http://localhost:7080/api/auth/google/callback
+         - OCR_SERVICE_URL=https://vision.googleapis.com/v1/images:annotate
+         - OCR_API_KEY=your-ocr-api-key
+         - NEXT_PUBLIC_APP_URL=http://localhost:7080
+         - NEXT_PUBLIC_APP_NAME=E-Fatura Sistemi
+       restart: unless-stopped
+       networks:
+         - app-network
+   
+     mongodb:
+       image: mongo:latest
+       ports:
+         - "27017:27017"
+       volumes:
+         - mongodb_data:/data/db
+       networks:
+         - app-network
+   
+   volumes:
+     mongodb_data:
+   ```
 
-- `GET /api/contacts` - Cari hesapları listeleme
-- `POST /api/contacts` - Yeni cari hesap oluşturma
+2. **Docker ile Başlatma**
+   ```bash
+   docker-compose up -d
+   ```
 
-## Geliştirme
+#### Yöntem 3: Coolify Deployment (Önerilen - SSH Gerektirmez)
 
-### Mevcut Özellikler
+1. **GitHub Repository Oluşturun**
+   - [GitHub.com](https://github.com/new) adresine gidin
+   - Repository name alanına `e-fatura-sistemi` yazın
+   - Repository'yi "Public" yapın (veya Private isterseniz)
+   - "Initialize this repository with a README" seçeneğini işaretleyin
+   - "Create repository" butonuna tıklayın
 
-- [ ] GİB API entegrasyonu tamamlanacak
-- [ ] Gmail API entegrasyonu tamamlanacak
-- [ ] OCR servisi entegrasyonu tamamlanacak
-- [ ] PDF oluşturma özelliği eklenecek
-- [ ] E-posta bildirimleri eklenecek
-- [ ] Excel/PDF export özellikleri tamamlanacak
+2. **GitHub'a Push Etme**
+   ```bash
+   cd e-fatura-sistemi
+   git remote add origin https://github.com/KULLANICI_ADINIZ/e-fatura-sistemi.git
+   git branch -M main
+   git push -u origin main
+   ```
 
-### Katkıda Bulunma
+3. **Coolify Dashboard'a Bağlanma**
+   - [Coolify Dashboard](https://dashboard.coolify.com) adresine gidin
+   - GitHub repository'nizi bağlayın
+   - `accounting.innovmar.cloud` subdomain'ini belirtin
+   - "Deploy Now" veya "Manual Deploy" seçeneğini seçin
+   - Deploy butonuna tıklayın
 
-Katkılarınızı bekliyoruz! Lütfen:
-1. Fork yapın
-2. Feature branch oluşturun
-3. Değişikliklerinizi yapın
-4. Commit yapın
-5. Push edin
-6. Pull Request açın
+#### Yöntem 4: Vercel Deployment
 
-## Lisans
+1. **Vercel Hesabınıza Gidin**
+   - [Vercel](https://vercel.com) hesabınıza gidin
+   - "Add New Project" seçeneğini seçin
+   - GitHub repository'nizi import edin
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+2. **Deploy Edin**
+   - Deploy butonuna tıklayın
 
-## İletişim
+#### Yöntem 5: Netlify Deployment
 
-- E-posta: destek@efatura.com
-- Web: https://efatura.com
-- GitHub: https://github.com/efatura-sistemi
+1. **Netlify Hesabınıza Gidin**
+   - [Netlify](https://netlify.com) hesabınıza gidin
+   - "New site from Git" seçeneğini seçin
+   - GitHub repository'nizi bağlayın
 
-## KVKK
+2. **Deploy Edin**
+   - Deploy butonuna tıklayın
 
-Bu proje KVKK (Kişisel Verilerin Korunması Kanunu) gereksinimlerine uygun olarak tasarlanmıştır. Kullanıcı verileri şifrelenir ve güvenli bir şekilde saklanır.
+#### Yöntem 6: Railway Deployment
+
+1. **Railway Hesabınıza Gidin**
+   - [Railway](https://railway.app) hesabınıza gidin
+   - "New Project" seçeneğini seçin
+   - GitHub repository'nizi bağlayın
+   - Dockerfile ve docker-compose.yml kullanarak deploy edin
+
+## 📊 Sistem Durumu
+
+**Şu Anda Çalışıyor:**
+- Geliştirme sunucusu: http://localhost:7080
+- Git repository: Hazır (ilk commit oluşturuldu)
+
+**Tamamlanan Özellikler:**
+- ✅ Landing page (Hero, Features, Pricing, FAQ, Contact, Footer)
+- ✅ Kayıt ve giriş sayfaları
+- ✅ Dashboard ana sayfası
+- ✅ Fatura yönetimi (liste, oluşturma)
+- ✅ Raporlama sayfası (Gelir-Gider, KDV, Müşteri, Nakit Akışı)
+- ✅ Cari hesap yönetimi
+- ✅ Banka ve Kasa hesapları
+- ✅ OCR fatura okuma sayfası
+- ✅ E-posta entegrasyonu sayfası
+- ✅ Ayarlar sayfası (Profil, Şirket, Entegrasyonlar, Bildirimler, Güvenlik)
+- ✅ Admin paneli (Kullanıcılar, Şirketler, Sistem ayarları, Loglar)
+- ✅ Authentication sistemi (JWT, bcrypt)
+- ✅ MongoDB modelleri (User, Company, Invoice, Contact)
+- ✅ API route'ları (Auth, Invoices, Contacts, GİB, Gmail)
+- ✅ PDF ve Excel export fonksiyonelliği
+- ✅ Recharts grafik bileşenleri (Gelir-Gider, KDV, Nakit Akışı)
+- ✅ GİB API entegrasyonu (simülasyon hazır)
+- ✅ Gmail API entegrasyonu (simülasyon hazır)
+- ✅ OCR servisi (Google Vision/Tesseract desteği)
+- ✅ Middleware authentication (devre dışı bıraklı)
+- ✅ Git repository başlatıldı
+- ✅ Deployment script oluşturuldu
+- ✅ Docker Compose konfigürasyonu oluşturuldu
+
+## 📝 Lisans
+
+Bu proje eğitim ve geliştirme amaçlıdır. Üretim kullanımı için GİB resmi API'sine kayıt olmanız ve gerekli lisansları almanız gerekmektedir.
+
+## 🤝 Destek
+
+Herhangi bir sorun için lütfen GitHub repository'sindeki issues bölümünü kullanın veya yeni bir issue oluşturun.
+
+## 📧 İletişim
+
+- GitHub Issues: https://github.com/KULLANICI_ADINIZ/e-fatura-sistemi/issues
+- E-posta: destek@efatura-sistemi.com
+
+## 🔐 Güvenlik Notları
+
+- Bu sistem KVKK uyumlu olarak tasarlanmıştır
+- Tüm hassas veriler şifrelenmiş şekilde saklanmalıdır
+- Güvenli HTTPS kullanın (üretim ortamında)
+- JWT token'ların süresi 7 gündür
+- Şifreler en az 8 karakter olmalıdır
+- API route'ları rate limiting ile korunmalıdır
+
+---
+
+**Türkiye E-Fatura Entegrasyonlu Ön Muhasebe Sistemi** © 2024
