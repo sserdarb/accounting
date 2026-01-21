@@ -71,6 +71,29 @@ class GmailService {
   }
 
   /**
+   * Gmail API bağlantısını test eder (Simülasyon)
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; email?: string }> {
+    try {
+      if (!this.config) {
+        return { success: false, message: 'Gmail yapılandırması bulunamadı.' };
+      }
+
+      // Simülasyon gecikmesi
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      return {
+        success: true,
+        message: 'Gmail API bağlantısı başarılı.',
+        email: 'test@example.com'
+      };
+    } catch (error) {
+      console.error('Gmail API test hatası:', error);
+      return { success: false, message: 'Gmail API bağlantı testi başarısız.' };
+    }
+  }
+
+  /**
    * Son e-postaları getirir (Simülasyon)
    */
   async getRecentEmails(maxResults: number = 20): Promise<EmailMessage[]> {
