@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
   // Define protected paths
   const isProtectedPath = pathname.startsWith('/dashboard') ||
-    (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/seed-admin'));
+    (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/seed-admin') && !pathname.startsWith('/api/test-db'));
 
   if (isProtectedPath) {
     if (!token) {
