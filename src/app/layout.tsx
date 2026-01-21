@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "E-Fatura Sistemi - Türkiye'nin En Kapsamlı Ön Muhasebe Çözümü",
-  description: "Türkiye'deki firmalar için kapsamlı ön muhasebe ve e-fatura yönetim sistemi. GİB entegrasyonu, OCR fatura tanıma, Gmail entegrasyonu ve daha fazlası.",
-  keywords: ["e-fatura", "ön muhasebe", "GİB entegrasyonu", "fatura yönetimi", "OCR", "Türkiye"],
+  title: "Innovmar Accounting - Türkiye'nin En Kapsamlı Ön Muhasebe Çözümü",
+  description: "Innovmar Accounting: Türkiye'deki firmalar için kapsamlı ön muhasebe ve e-fatura yönetim sistemi. GİB entegrasyonu, OCR fatura tanıma, Gmail entegrasyonu ve daha fazlası.",
+  keywords: ["e-fatura", "ön muhasebe", "GİB entegrasyonu", "fatura yönetimi", "OCR", "Türkiye", "Innovmar"],
 };
 
 export default function RootLayout({
