@@ -36,7 +36,16 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    // Auto-fix for Coolify MongoDB auth issue
+    let uri = MONGODB_URI;
+    // Check if we are using root user and missing authSource
+    if (uri.includes('root:') && !uri.includes('authSource=')) {
+      const separator = uri.includes('?') ? '&' : '?';
+      uri = `${uri}${separator}authSource=admin`;
+      console.log('Automatically added authSource=admin to MongoDB URI');
+    }
+
+    cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
       return mongoose;
     });
   }
