@@ -1,146 +1,348 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Users,
   FileText,
   Settings,
   Activity,
   Database,
-  Shield,
-  Bell,
   Search,
   Plus,
   Edit,
   Trash2,
-  MoreHorizontal,
   TrendingUp,
   AlertCircle,
+  Loader2,
+  LogIn,
+  Building2,
+  X,
 } from 'lucide-react';
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  companyId: string;
+  company?: { name: string };
+  lastLogin?: string;
+  createdAt: string;
+}
+
+interface Company {
+  _id: string;
+  name: string;
+  taxNumber: string;
+  taxOffice: string;
+  userCount: number;
+  createdAt: string;
+}
+
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'companies' | 'settings' | 'logs'>('overview');
+  const router = useRouter();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'companies'>('overview');
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Modal states
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form data
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+    companyId: '',
+  });
+
+  const [companyForm, setCompanyForm] = useState({
+    name: '',
+    taxNumber: '',
+    taxOffice: '',
+    address: '',
+    phone: '',
+    email: '',
+  });
 
   const tabs = [
     { id: 'overview', label: 'Genel Bakış', icon: Activity },
     { id: 'users', label: 'Kullanıcılar', icon: Users },
-    { id: 'companies', label: 'Firmalar', icon: Settings },
-    { id: 'settings', label: 'Ayarlar', icon: Settings },
-    { id: 'logs', label: 'Loglar', icon: Database },
+    { id: 'companies', label: 'Firmalar', icon: Building2 },
   ];
 
-  const stats = [
-    {
-      title: 'Toplam Kullanıcı',
-      value: '1,234',
-      change: '+12.5%',
-      trend: 'up',
-      icon: Users,
-    },
-    {
-      title: 'Aktif Firma',
-      value: '456',
-      change: '+8.1%',
-      trend: 'up',
-      icon: Settings,
-    },
-    {
-      title: 'Toplam Fatura',
-      value: '12,345',
-      change: '+23.2%',
-      trend: 'up',
-      icon: FileText,
-    },
-    {
-      title: 'Sistem Hataları',
-      value: '5',
-      change: '-15.3%',
-      trend: 'down',
-      icon: AlertCircle,
-    },
-  ];
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [usersRes, companiesRes] = await Promise.all([
+          fetch('/api/master-admin/users'),
+          fetch('/api/master-admin/companies'),
+        ]);
 
-  const users = [
-    {
-      id: 1,
-      name: 'Ahmet Yılmaz',
-      email: 'ahmet@firma.com',
-      role: 'admin',
-      company: 'ABC Ltd. Şti.',
-      status: 'active',
-      lastLogin: '2024-01-15 10:30',
-    },
-    {
-      id: 2,
-      name: 'Ayşe Demir',
-      email: 'ayse@sirket.com',
-      role: 'user',
-      company: 'XYZ A.Ş.',
-      status: 'active',
-      lastLogin: '2024-01-14 14:45',
-    },
-    {
-      id: 3,
-      name: 'Mehmet Kaya',
-      email: 'mehmet@ticaret.com',
-      role: 'user',
-      company: 'DEF Ticaret',
-      status: 'inactive',
-      lastLogin: '2024-01-10 09:15',
-    },
-    {
-      id: 4,
-      name: 'Fatma Öz',
-      email: 'fatma@lojistik.com',
-      role: 'user',
-      company: 'GHI Lojistik',
-      status: 'active',
-      lastLogin: '2024-01-15 16:20',
-    },
-  ];
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUsers(usersData.data || []);
+        }
 
-  const companies = [
-    {
-      id: 1,
-      name: 'ABC Ltd. Şti.',
-      taxNumber: '1234567890',
-      taxOffice: 'İstanbul Vergi Dairesi',
-      users: 5,
-      status: 'active',
-      plan: 'Profesyonel',
-      createdAt: '2024-01-01',
-    },
-    {
-      id: 2,
-      name: 'XYZ A.Ş.',
-      taxNumber: '0987654321',
-      taxOffice: 'Ankara Vergi Dairesi',
-      users: 12,
-      status: 'active',
-      plan: 'Kurumsal',
-      createdAt: '2024-01-05',
-    },
-    {
-      id: 3,
-      name: 'DEF Ticaret',
-      taxNumber: '1122334455',
-      taxOffice: 'İzmir Vergi Dairesi',
-      users: 3,
-      status: 'inactive',
-      plan: 'Başlangıç',
-      createdAt: '2024-01-10',
-    },
-  ];
+        if (companiesRes.ok) {
+          const companiesData = await companiesRes.json();
+          setCompanies(companiesData.data || []);
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Hata',
+          description: 'Veriler yüklenemedi',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleImpersonate = async (userId: string) => {
+    try {
+      const res = await fetch('/api/master-admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: userId }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: 'Başarılı',
+          description: data.message,
+        });
+        router.push('/dashboard');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!userForm.name || !userForm.email || !userForm.password || !userForm.companyId) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Lütfen tüm alanları doldurun',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/master-admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userForm),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: 'Başarılı',
+          description: 'Kullanıcı oluşturuldu',
+        });
+        setShowUserModal(false);
+        setUserForm({ name: '', email: '', password: '', role: 'user', status: 'active', companyId: '' });
+        // Refresh users
+        const usersRes = await fetch('/api/master-admin/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUsers(usersData.data || []);
+        }
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/master-admin/users/${editingUser._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userForm.name,
+          role: userForm.role,
+          status: userForm.status,
+          companyId: userForm.companyId,
+          ...(userForm.password && { password: userForm.password }),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: 'Başarılı',
+          description: 'Kullanıcı güncellendi',
+        });
+        setEditingUser(null);
+        setShowUserModal(false);
+        // Refresh users
+        const usersRes = await fetch('/api/master-admin/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUsers(usersData.data || []);
+        }
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+
+    try {
+      const res = await fetch(`/api/master-admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: 'Başarılı',
+          description: 'Kullanıcı silindi',
+        });
+        setUsers(users.filter(u => u._id !== userId));
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleCreateCompany = async () => {
+    if (!companyForm.name || !companyForm.taxNumber) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Şirket adı ve vergi numarası gerekli',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/master-admin/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(companyForm),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: 'Başarılı',
+          description: 'Şirket oluşturuldu',
+        });
+        setShowCompanyModal(false);
+        setCompanyForm({ name: '', taxNumber: '', taxOffice: '', address: '', phone: '', email: '' });
+        // Refresh companies
+        const companiesRes = await fetch('/api/master-admin/companies');
+        if (companiesRes.ok) {
+          const companiesData = await companiesRes.json();
+          setCompanies(companiesData.data || []);
+        }
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      email: user.email,
+      password: '',
+      role: user.role,
+      status: user.status || 'active',
+      companyId: user.companyId,
+    });
+    setShowUserModal(true);
+  };
 
   const getRoleBadge = (role: string) => {
     const roleConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-      admin: { label: 'Admin', variant: 'default' },
-      user: { label: 'Kullanıcı', variant: 'secondary' },
+      masteradmin: { label: 'Master Admin', variant: 'default' },
+      admin: { label: 'Admin', variant: 'secondary' },
+      user: { label: 'Kullanıcı', variant: 'outline' },
     };
     const config = roleConfig[role] || { label: role, variant: 'outline' };
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -152,23 +354,44 @@ export default function AdminPage() {
       inactive: { label: 'Pasif', variant: 'secondary' },
       suspended: { label: 'Askıya Alındı', variant: 'destructive' },
     };
-    const config = statusConfig[status] || { label: status, variant: 'outline' };
+    const config = statusConfig[status] || { label: status || 'Aktif', variant: 'outline' };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCompanies = companies.filter(company =>
+    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    company.taxNumber.includes(searchQuery)
+  );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1 lg:ml-64 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Yükleniyor...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
 
-      {/* Main Content */}
       <main className="flex-1 lg:ml-64">
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Admin Paneli</h1>
-            <p className="text-muted-foreground">
-              Sistem yönetimi ve izleme merkezi
-            </p>
+            <h1 className="text-3xl font-bold mb-2">Master Admin Paneli</h1>
+            <p className="text-muted-foreground">Tüm kullanıcıları ve firmaları yönetin</p>
           </div>
 
           {/* Tabs */}
@@ -178,11 +401,10 @@ export default function AdminPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   <tab.icon className="h-4 w-4" />
                   {tab.label}
@@ -194,65 +416,63 @@ export default function AdminPage() {
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, index) => (
-                  <Card key={index}>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        {stat.title}
-                      </CardTitle>
-                      <stat.icon className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <div className="flex items-center gap-1 text-xs mt-1">
-                        {stat.trend === 'up' ? (
-                          <TrendingUp className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <TrendingUp className="h-3 w-3 text-green-600 rotate-180" />
-                        )}
-                        <span
-                          className={
-                            stat.trend === 'up' ? 'text-green-600' : 'text-green-600'
-                          }
-                        >
-                          {stat.change}
-                        </span>
-                        <span className="text-muted-foreground">geçen aya göre</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Toplam Kullanıcı</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{users.length}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Aktif Firma</CardTitle>
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{companies.length}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Admin Sayısı</CardTitle>
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{users.filter(u => u.role === 'admin' || u.role === 'masteradmin').length}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Aktif Kullanıcı</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{users.filter(u => u.status === 'active' || !u.status).length}</div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Recent Activity */}
+              {/* Quick Actions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Son Aktiviteler</CardTitle>
+                  <CardTitle>Hızlı İşlemler</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { action: 'Yeni kullanıcı kaydı', user: 'Ahmet Yılmaz', time: '10 dakika önce' },
-                      { action: 'Fatura oluşturuldu', user: 'Ayşe Demir', time: '15 dakika önce' },
-                      { action: 'Firma bilgileri güncellendi', user: 'Mehmet Kaya', time: '1 saat önce' },
-                      { action: 'GİB entegrasyonu tamamlandı', user: 'Sistem', time: '2 saat önce' },
-                      { action: 'Yeni firma kaydı', user: 'Fatma Öz', time: '3 saat önce' },
-                    ].map((activity, index) => (
-                      <div key={index} className="flex items-start gap-3 pb-4 last:pb-0 border-b last:border-0">
-                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Activity className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm">{activity.action}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.user} • {activity.time}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => {
+                    setEditingUser(null);
+                    setUserForm({ name: '', email: '', password: '', role: 'user', status: 'active', companyId: '' });
+                    setShowUserModal(true);
+                  }}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Yeni Kullanıcı
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCompanyModal(true)}>
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Yeni Firma
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -268,9 +488,15 @@ export default function AdminPage() {
                     type="text"
                     placeholder="Kullanıcı ara..."
                     className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button>
+                <Button onClick={() => {
+                  setEditingUser(null);
+                  setUserForm({ name: '', email: '', password: '', role: 'user', status: 'active', companyId: '' });
+                  setShowUserModal(true);
+                }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Yeni Kullanıcı
                 </Button>
@@ -282,29 +508,16 @@ export default function AdminPage() {
                     <table className="w-full">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Kullanıcı
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Rol
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Firma
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Durum
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Son Giriş
-                          </th>
-                          <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
-                            İşlem
-                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Kullanıcı</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Rol</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Firma</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Durum</th>
+                          <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">İşlem</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((user) => (
-                          <tr key={user.id} className="border-t hover:bg-muted/50">
+                        {filteredUsers.map((user) => (
+                          <tr key={user._id} className="border-t hover:bg-muted/50">
                             <td className="py-3 px-4">
                               <div>
                                 <p className="text-sm font-medium">{user.name}</p>
@@ -312,21 +525,31 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td className="py-3 px-4">{getRoleBadge(user.role)}</td>
-                            <td className="py-3 px-4 text-sm">{user.company}</td>
+                            <td className="py-3 px-4 text-sm">{user.company?.name || 'Bilinmeyen'}</td>
                             <td className="py-3 px-4">{getStatusBadge(user.status)}</td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground">
-                              {user.lastLogin}
-                            </td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="sm">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleImpersonate(user._id)}
+                                  title="Olarak giriş yap"
+                                >
+                                  <LogIn className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditModal(user)}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteUser(user._id)}
+                                >
                                   <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </div>
                             </td>
@@ -350,9 +573,11 @@ export default function AdminPage() {
                     type="text"
                     placeholder="Firma ara..."
                     className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button>
+                <Button onClick={() => setShowCompanyModal(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Yeni Firma
                 </Button>
@@ -364,57 +589,19 @@ export default function AdminPage() {
                     <table className="w-full">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Firma
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Vergi No
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Vergi Dairesi
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Kullanıcı
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Plan
-                          </th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                            Durum
-                          </th>
-                          <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">
-                            İşlem
-                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Firma</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Vergi No</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Vergi Dairesi</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Kullanıcı</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {companies.map((company) => (
-                          <tr key={company.id} className="border-t hover:bg-muted/50">
-                            <td className="py-3 px-4 text-sm font-medium">
-                              {company.name}
-                            </td>
+                        {filteredCompanies.map((company) => (
+                          <tr key={company._id} className="border-t hover:bg-muted/50">
+                            <td className="py-3 px-4 text-sm font-medium">{company.name}</td>
                             <td className="py-3 px-4 text-sm">{company.taxNumber}</td>
                             <td className="py-3 px-4 text-sm">{company.taxOffice}</td>
-                            <td className="py-3 px-4 text-sm">{company.users}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant="secondary">{company.plan}</Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              {getStatusBadge(company.status)}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="sm">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
+                            <td className="py-3 px-4 text-sm">{company.userCount || 0}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -424,102 +611,196 @@ export default function AdminPage() {
               </Card>
             </div>
           )}
-
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sistem Ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Sistem Adı</label>
-                    <Input defaultValue="E-Fatura Sistemi" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Destek E-posta</label>
-                    <Input defaultValue="destek@efatura.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Varsayılan KDV Oranı (%)</label>
-                    <Input type="number" defaultValue="20" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" id="registration" className="h-4 w-4 rounded" defaultChecked />
-                    <label htmlFor="registration" className="text-sm">
-                      Yeni kayıtlar otomatik onaylansın
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" id="notifications" className="h-4 w-4 rounded" defaultChecked />
-                    <label htmlFor="notifications" className="text-sm">
-                      Hata bildirimleri e-posta ile gönderilsin
-                    </label>
-                  </div>
-                  <Button>Kaydet</Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>GİB Entegrasyon Ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">GİB API URL</label>
-                    <Input defaultValue="https://efatura.gib.gov.tr" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Test Modu</label>
-                    <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-                      <option value="test">Test Modu</option>
-                      <option value="production">Canlı Mod</option>
-                    </select>
-                  </div>
-                  <Button>Kaydet</Button>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Logs Tab */}
-          {activeTab === 'logs' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Sistem Logları</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 font-mono text-sm">
-                  {[
-                    { level: 'INFO', message: 'User logged in: ahmet@firma.com', time: '2024-01-15 10:30:00' },
-                    { level: 'INFO', message: 'Invoice created: FAT-2024001', time: '2024-01-15 10:35:00' },
-                    { level: 'WARNING', message: 'GIB API rate limit approaching', time: '2024-01-15 10:40:00' },
-                    { level: 'ERROR', message: 'Database connection timeout', time: '2024-01-15 10:45:00' },
-                    { level: 'INFO', message: 'Invoice sent to GIB: FAT-2024001', time: '2024-01-15 10:50:00' },
-                  ].map((log, index) => (
-                    <div key={index} className="flex items-start gap-3 pb-2 last:pb-0 border-b last:border-0">
-                      <span
-                        className={`flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
-                          log.level === 'ERROR'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : log.level === 'WARNING'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        }`}
-                      >
-                        {log.level}
-                      </span>
-                      <span className="text-muted-foreground">{log.time}</span>
-                      <span className="flex-1">{log.message}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </main>
+
+      {/* User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                {editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı'}
+              </h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowUserModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Ad Soyad</Label>
+                <Input
+                  value={userForm.name}
+                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                  placeholder="Kullanıcı adı"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-posta</Label>
+                <Input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  placeholder="ornek@email.com"
+                  disabled={!!editingUser}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{editingUser ? 'Yeni Şifre (Boş bırakabilirsiniz)' : 'Şifre'}</Label>
+                <Input
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Firma</Label>
+                <Select
+                  value={userForm.companyId}
+                  onValueChange={(value) => setUserForm({ ...userForm, companyId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Firma seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company._id} value={company._id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Rol</Label>
+                  <Select
+                    value={userForm.role}
+                    onValueChange={(value) => setUserForm({ ...userForm, role: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Kullanıcı</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="masteradmin">Master Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Durum</Label>
+                  <Select
+                    value={userForm.status}
+                    onValueChange={(value) => setUserForm({ ...userForm, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Aktif</SelectItem>
+                      <SelectItem value="inactive">Pasif</SelectItem>
+                      <SelectItem value="suspended">Askıya Alındı</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="flex-1"
+                  onClick={editingUser ? handleUpdateUser : handleCreateUser}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    editingUser ? 'Güncelle' : 'Oluştur'
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => setShowUserModal(false)}>
+                  İptal
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Company Modal */}
+      {showCompanyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Yeni Firma</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowCompanyModal(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Firma Adı</Label>
+                <Input
+                  value={companyForm.name}
+                  onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
+                  placeholder="ABC Ltd. Şti."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Vergi Numarası</Label>
+                <Input
+                  value={companyForm.taxNumber}
+                  onChange={(e) => setCompanyForm({ ...companyForm, taxNumber: e.target.value })}
+                  placeholder="1234567890"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Vergi Dairesi</Label>
+                <Input
+                  value={companyForm.taxOffice}
+                  onChange={(e) => setCompanyForm({ ...companyForm, taxOffice: e.target.value })}
+                  placeholder="İstanbul VD"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-posta</Label>
+                <Input
+                  type="email"
+                  value={companyForm.email}
+                  onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })}
+                  placeholder="info@firma.com"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="flex-1"
+                  onClick={handleCreateCompany}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    'Oluştur'
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => setShowCompanyModal(false)}>
+                  İptal
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

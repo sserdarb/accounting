@@ -6,8 +6,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'masteradmin' | 'admin' | 'user';
   companyId: string;
+  impersonatedBy?: string; // Original masteradmin's userId when impersonating
 }
 
 /**
@@ -36,6 +37,9 @@ export function generateToken(payload: JWTPayload): string {
     expiresIn: '7d', // Token expires in 7 days
   });
 }
+
+// Alias for generateToken
+export const signToken = generateToken;
 
 /**
  * Verify a JWT token

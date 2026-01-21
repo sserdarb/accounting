@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
             email,
             password,
             name: name || 'Admin',
-            role: 'admin',
+            role: 'masteradmin',
+            status: 'active',
             companyId: company._id.toString(),
         });
 

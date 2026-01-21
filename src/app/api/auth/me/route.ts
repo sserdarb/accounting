@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
                 email: user.email,
                 role: user.role,
                 companyId: decoded.companyId,
-                companyName: company?.name || 'Bilinmeyen Şirket'
+                companyName: company?.name || 'Bilinmeyen Şirket',
+                isImpersonating: !!decoded.impersonatedBy
             }
         });
     } catch (error) {

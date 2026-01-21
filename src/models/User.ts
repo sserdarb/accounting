@@ -5,8 +5,10 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
-  role: 'admin' | 'user';
+  role: 'masteradmin' | 'admin' | 'user';
+  status: 'active' | 'inactive' | 'suspended';
   companyId: string;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -33,13 +35,21 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['admin', 'user'],
+      enum: ['masteradmin', 'admin', 'user'],
       default: 'user',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
     },
     companyId: {
       type: String,
       required: true,
       ref: 'Company',
+    },
+    lastLogin: {
+      type: Date,
     },
   },
   {

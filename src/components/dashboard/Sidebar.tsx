@@ -37,6 +37,7 @@ interface UserInfo {
   name: string;
   email: string;
   companyName: string;
+  role: string;
 }
 
 export default function Sidebar() {
@@ -46,6 +47,7 @@ export default function Sidebar() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -56,8 +58,10 @@ export default function Sidebar() {
           setUser({
             name: data.user.name,
             email: data.user.email,
-            companyName: data.user.companyName
+            companyName: data.user.companyName,
+            role: data.user.role
           });
+          setIsImpersonating(data.user.isImpersonating || false);
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -153,6 +157,23 @@ export default function Sidebar() {
                   </Link>
                 );
               })}
+
+              {/* Admin Panel Link - Only for masteradmin */}
+              {user?.role === 'masteradmin' && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors mt-4 border-t pt-4',
+                    pathname === '/admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950'
+                  )}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Users className="h-4 w-4" />
+                  Admin Paneli
+                </Link>
+              )}
             </div>
           </nav>
 
