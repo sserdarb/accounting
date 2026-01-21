@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
+import AIAssistant from '@/components/AIAssistant';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -482,6 +483,9 @@ export default function ReportsPage() {
           )}
         </div>
       </main>
+
+      {/* AI Assistant */}
+      <AIAssistant context="reports" />
     </div>
   );
 }
