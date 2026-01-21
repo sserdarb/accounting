@@ -32,6 +32,9 @@ export interface IInvoice extends Document {
   total: number;
   notes?: string;
   gibUuid?: string;
+  gibStatus?: 'PENDING' | 'SUCCESS' | 'ERROR';
+  gibResponseCode?: string;
+  gibResponseMessage?: string;
   pdfUrl?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -127,6 +130,16 @@ const InvoiceSchema = new Schema<IInvoice>(
       type: String,
     },
     gibUuid: {
+      type: String,
+    },
+    gibStatus: {
+      type: String,
+      enum: ['PENDING', 'SUCCESS', 'ERROR'],
+    },
+    gibResponseCode: {
+      type: String,
+    },
+    gibResponseMessage: {
       type: String,
     },
     pdfUrl: {

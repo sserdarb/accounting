@@ -6,7 +6,7 @@ import gibService from '@/lib/gib';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const token = request.cookies.get('token')?.value;
@@ -19,7 +19,7 @@ export async function POST(
             return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         await connectDB();
 
         const invoice = await Invoice.findOne({ _id: id, companyId: decoded.companyId });
