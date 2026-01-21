@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 export default function FAQ() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<string | null>(null);
 
   const categories = [
     {
