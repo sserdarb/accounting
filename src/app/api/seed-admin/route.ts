@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
         if (!company) {
             company = await Company.create({
                 name: companyName || 'Innovmar A.Ş.',
-                vkn: '1234567890',
+                taxNumber: '1234567890',
+                taxOffice: 'İstanbul VD',
                 address: 'İstanbul, Türkiye',
                 phone: '+90 212 555 01 23',
                 email: email,
