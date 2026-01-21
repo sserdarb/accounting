@@ -101,6 +101,29 @@ class GIBService {
   }
 
   /**
+   * GİB API bağlantısını test eder (Simülasyon)
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; serverTime?: string }> {
+    try {
+      if (!this.config) {
+        return { success: false, message: 'GİB yapılandırması bulunamadı.' };
+      }
+
+      // Simülasyon gecikmesi
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      return {
+        success: true,
+        message: 'GİB API bağlantısı başarılı.',
+        serverTime: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('GİB API test hatası:', error);
+      return { success: false, message: 'GİB API bağlantı testi başarısız.' };
+    }
+  }
+
+  /**
    * E-Fatura gönderir (Simülasyon)
    */
   async sendInvoice(invoiceData: InvoiceData): Promise<GIBResponse> {
