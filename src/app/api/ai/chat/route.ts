@@ -2,8 +2,52 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const AI_API_KEY = process.env.AI_API_KEY || 'sk-N30PKdJ0Oc6wGU4p6gX5ibHfV5LHw1bw9t0voOkBauDqNVih';
-const AI_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDb9g1p9ioHbDDt_LNku_NQMzeg6z4zxB0';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// System features for context
+const SYSTEM_FEATURES = `
+Innovmar Accounting Sistemi Özellikleri:
+
+1. FATURA YÖNETİMİ
+   - Satış ve alış faturası oluşturma
+   - E-fatura ve e-arşiv fatura desteği
+   - GİB entegrasyonu ile otomatik gönderim
+   - KDV hesaplama (%1, %8, %10, %18, %20)
+   - Fatura şablonları ve PDF çıktı
+
+2. CARİ HESAPLAR
+   - Müşteri ve tedarikçi yönetimi
+   - Bakiye takibi (alacak/borç)
+   - İletişim bilgileri ve vergi numarası
+   - Cari ekstre görüntüleme
+
+3. BANKA & KASA
+   - Banka hesabı, kasa ve kredi kartı tanımlama
+   - Para transferi (hesaplar arası)
+   - Banka ekstresi içe aktarma (AI ile otomatik sınıflandırma)
+   - Gelir/gider takibi
+   - TRY, USD, EUR para birimleri
+
+4. RAPORLAR
+   - Gelir-gider raporu
+   - KDV raporu
+   - Müşteri analizi
+   - Nakit akışı raporu
+   - PDF ve Excel export
+
+5. AYARLAR
+   - Şirket bilgileri
+   - Vergi numarası ve dairesi
+   - Logo ve iletişim bilgileri
+   - GİB entegrasyon ayarları
+
+6. MASTER ADMIN (Yönetici)
+   - Tüm kullanıcıları görüntüleme
+   - Kullanıcı ekleme/düzenleme/silme
+   - Firma oluşturma
+   - Kullanıcı olarak giriş yapma (impersonate)
+`;
 
 // POST /api/ai/chat - AI Assistant for the application
 export async function POST(request: NextRequest) {
@@ -22,50 +66,53 @@ export async function POST(request: NextRequest) {
         let systemPrompt = `Sen Innovmar Accounting uygulamasının yapay zeka asistanısın. 
 Kullanıcılara Türkçe olarak yardımcı oluyorsun. 
 Muhasebe, fatura, banka işlemleri ve finansal konularda uzmanısın.
-Kısa ve öz cevaplar ver. Emoji kullanabilirsin.`;
+Kısa ve öz cevaplar ver. Emoji kullanabilirsin.
+
+${SYSTEM_FEATURES}`;
 
         if (context === 'bank') {
             systemPrompt += `\n\nŞu an kullanıcı Kasa ve Banka sayfasında. 
-Banka hesapları, para transferleri ve banka ekstresi içe aktarma konularında yardımcı ol.`;
+Banka hesapları, para transferleri ve banka ekstresi içe aktarma konularında yardımcı ol.
+Kullanıcıya "Yeni Hesap Ekle", "Para Transferi" ve "Ekstre İçe Aktar" butonlarını kullanabileceğini hatırlat.`;
         } else if (context === 'invoice') {
             systemPrompt += `\n\nŞu an kullanıcı Faturalar sayfasında.
-Fatura oluşturma, e-fatura, KDV hesaplama ve GİB entegrasyonu konularında yardımcı ol.`;
+Fatura oluşturma, e-fatura, KDV hesaplama ve GİB entegrasyonu konularında yardımcı ol.
+"Yeni Fatura" butonuyla fatura oluşturabileceğini belirt.`;
         } else if (context === 'contacts') {
             systemPrompt += `\n\nŞu an kullanıcı Cari Hesaplar sayfasında.
-Müşteri ve tedarikçi yönetimi, bakiye takibi konularında yardımcı ol.`;
+Müşteri ve tedarikçi yönetimi, bakiye takibi konularında yardımcı ol.
+"Yeni Cari Ekle" butonuyla müşteri veya tedarikçi ekleyebileceğini belirt.`;
         } else if (context === 'reports') {
             systemPrompt += `\n\nŞu an kullanıcı Raporlar sayfasında.
-Finansal raporlar, gelir-gider analizi ve KDV beyannamesi konularında yardımcı ol.`;
+Finansal raporlar, gelir-gider analizi ve KDV beyannamesi konularında yardımcı ol.
+PDF ve Excel export butonlarını kullanabileceğini hatırlat.`;
         }
 
-        const response = await fetch(AI_API_URL, {
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AI_API_KEY}`,
-                'HTTP-Referer': 'https://accounting.innovmar.cloud',
-                'X-Title': 'Innovmar Accounting',
             },
             body: JSON.stringify({
-                model: 'deepseek/deepseek-chat',
-                messages: [
-                    {
-                        role: 'system',
-                        content: systemPrompt,
-                    },
+                contents: [
                     {
                         role: 'user',
-                        content: message,
-                    },
+                        parts: [
+                            { text: systemPrompt },
+                            { text: `\n\nKullanıcı sorusu: ${message}` }
+                        ]
+                    }
                 ],
-                temperature: 0.7,
-                max_tokens: 1000,
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 1000,
+                },
             }),
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('AI API error:', errorText);
+            console.error('Gemini API error:', errorText);
             return NextResponse.json(
                 { error: 'AI servisi şu an kullanılamıyor' },
                 { status: 503 }
@@ -73,12 +120,12 @@ Finansal raporlar, gelir-gider analizi ve KDV beyannamesi konularında yardımc�
         }
 
         const data = await response.json();
-        const aiResponse = data.choices?.[0]?.message?.content || 'Üzgünüm, şu an cevap veremiyorum.';
+        const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Üzgünüm, şu an cevap veremiyorum.';
 
         return NextResponse.json({
             success: true,
             response: aiResponse,
-            model: data.model,
+            model: 'gemini-2.0-flash',
         });
     } catch (error) {
         console.error('AI chat error:', error);

@@ -5,10 +5,10 @@ import { verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const AI_API_KEY = process.env.AI_API_KEY || 'sk-N30PKdJ0Oc6wGU4p6gX5ibHfV5LHw1bw9t0voOkBauDqNVih';
-const AI_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDb9g1p9ioHbDDt_LNku_NQMzeg6z4zxB0';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-// Classify transactions using AI
+// Classify transactions using Gemini AI
 async function classifyTransactionsWithAI(transactions: any[]): Promise<any[]> {
     try {
         const prompt = `Aşağıdaki banka işlemlerini analiz et ve her biri için kategori belirle.
@@ -26,37 +26,31 @@ Kategoriler şunlardan biri olmalı:
 İşlemler:
 ${transactions.map((t, i) => `${i + 1}. Tarih: ${t.date}, Açıklama: "${t.description}", Tutar: ${t.amount}`).join('\n')}
 
-Her işlem için JSON formatında cevap ver:
-[{"index": 0, "category": "Kategori", "confidence": 0.9}, ...]`;
+Her işlem için JSON formatında cevap ver (SADECE JSON, başka bir şey yazma):
+[{"index": 0, "category": "Kategori"}, ...]`;
 
-        const response = await fetch(AI_API_URL, {
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AI_API_KEY}`,
-                'HTTP-Referer': 'https://accounting.innovmar.cloud',
-                'X-Title': 'Innovmar Accounting',
             },
             body: JSON.stringify({
-                model: 'deepseek/deepseek-chat',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'Sen bir muhasebe uzmanısın. Banka işlemlerini analiz edip doğru kategoriye yerleştiriyorsun. Sadece JSON formatında cevap ver.',
-                    },
+                contents: [
                     {
                         role: 'user',
-                        content: prompt,
-                    },
+                        parts: [{ text: prompt }]
+                    }
                 ],
-                temperature: 0.3,
-                max_tokens: 2000,
+                generationConfig: {
+                    temperature: 0.3,
+                    maxOutputTokens: 2000,
+                },
             }),
         });
 
         if (!response.ok) {
-            console.error('AI API error:', await response.text());
-            return transactions.map((t, i) => ({
+            console.error('Gemini API error:', await response.text());
+            return transactions.map((t) => ({
                 ...t,
                 category: t.amount >= 0 ? 'Tahsilat' : 'Gider',
                 aiClassified: false,
@@ -64,7 +58,7 @@ Her işlem için JSON formatında cevap ver:
         }
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || '';
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         // Parse AI response
         try {
@@ -76,7 +70,6 @@ Her işlem için JSON formatında cevap ver:
                     return {
                         ...t,
                         category: classification?.category || (t.amount >= 0 ? 'Tahsilat' : 'Gider'),
-                        confidence: classification?.confidence || 0.5,
                         aiClassified: true,
                     };
                 });
