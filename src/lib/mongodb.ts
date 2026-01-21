@@ -38,12 +38,25 @@ async function connectDB() {
 
     // Auto-fix for Coolify MongoDB auth issue
     let uri = MONGODB_URI;
-    // Check if we are using root user and missing authSource
-    if (uri.includes('root:') && !uri.includes('authSource=')) {
+
+    // Check if the URI already has a database name. 
+    // A simple way is to check the part after the last slash but before query params.
+    const urlWithoutQuery = uri.split('?')[0];
+    const hasDbName = urlWithoutQuery.split('/').length > 3 && urlWithoutQuery.split('/')[3].length > 0;
+
+    if (!hasDbName) {
+      // If no DB name, assume 'accounting'
+      const queryPart = uri.includes('?') ? '?' + uri.split('?')[1] : '';
+      uri = `${urlWithoutQuery}/accounting${queryPart}`;
+    }
+
+    // Check if authSource is missing
+    if (!uri.includes('authSource=')) {
       const separator = uri.includes('?') ? '&' : '?';
       uri = `${uri}${separator}authSource=admin`;
-      console.log('Automatically added authSource=admin to MongoDB URI');
     }
+
+    console.log('Using MongoDB URI:', uri.replace(/:([^:@]+)@/, ':****@'));
 
     cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
       return mongoose;
