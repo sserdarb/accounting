@@ -52,22 +52,17 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ companyId: 1 });
 
 // Hash password before saving
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error: any) {
-    next(error);
-  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Compare password method
-UserSchema.methods.comparePassword = async function(candidatePassword: string) {
+UserSchema.methods.comparePassword = async function (candidatePassword: string) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
@@ -76,7 +71,7 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string) {
 };
 
 // Prevent password from being returned in queries
-UserSchema.methods.toJSON = function() {
+UserSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   return obj;
