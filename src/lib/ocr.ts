@@ -5,19 +5,19 @@
  * Google Vision API veya Tesseract kullanılabilir.
  */
 
-interface OCRConfig {
+export interface OCRConfig {
   provider: 'google-vision' | 'tesseract';
-  apiKey?: string; // Google Vision API için
+  apiKey?: string;
 }
 
-interface OCRResult {
+export interface OCRResult {
   success: boolean;
   text?: string;
   confidence?: number;
   error?: string;
 }
 
-interface ParsedInvoiceData {
+export interface ParsedInvoiceData {
   customerName?: string;
   taxNumber?: string;
   date?: string;
@@ -36,236 +36,118 @@ interface ParsedInvoiceData {
 class OCRService {
   private config: OCRConfig | null = null;
 
-  /**
-   * OCR servisini yapılandırır
-   */
+  async initializeWithCompany(companyId: string): Promise<boolean> {
+    try {
+      const Company = (await import('@/models/Company')).default;
+      const connectDB = (await import('@/lib/mongodb')).default;
+
+      await connectDB();
+      const company = await Company.findById(companyId);
+
+      if (!company || !company.ocrProvider) {
+        console.warn('OCR yapılandırması eksik');
+        return false;
+      }
+
+      this.config = {
+        provider: company.ocrProvider as 'google-vision' | 'tesseract',
+        apiKey: company.ocrApiKey
+      };
+
+      return true;
+    } catch (error) {
+      console.error('OCR Servis İlklendirme Hatası:', error);
+      return false;
+    }
+  }
+
   configure(config: OCRConfig): void {
     this.config = config;
-    console.log('OCR servisi yapılandırıldı:', config);
   }
 
   /**
-   * Resimden metin çıkarır (Google Vision API)
-   */
-  async extractTextFromImageGoogleVision(imageBase64: string): Promise<OCRResult> {
-    try {
-      if (!this.config || !this.config.apiKey) {
-        return { success: false, error: 'Google Vision API anahtarı yok' };
-      }
-
-      console.log('Google Vision API ile metin çıkarılıyor...');
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.post(
-      //   `https://vision.googleapis.com/v1/images:annotate?key=${this.config.apiKey}`,
-      //   {
-      //     requests: [
-      //       {
-      //         image: {
-      //           content: imageBase64,
-      //         },
-      //         features: [
-      //           {
-      //             type: 'TEXT_DETECTION',
-      //             maxResults: 1,
-      //           },
-      //         ],
-      //       },
-      //     ],
-      //   }
-      // );
-
-      // Simülasyon
-      return {
-        success: true,
-        text: 'FATURA NO: 12345\nMÜŞTERİ: ABC Ltd. Şti.\nTARİH: 01.01.2024\nTUTAR: ₺1,200.00',
-        confidence: 0.95,
-      };
-    } catch (error) {
-      console.error('Google Vision API hatası:', error);
-      return { success: false, error: 'Metin çıkarılamadı' };
-    }
-  }
-
-  /**
-   * Resimden metin çıkarır (Tesseract.js)
-   */
-  async extractTextFromImageTesseract(imageBase64: string): Promise<OCRResult> {
-    try {
-      console.log('Tesseract ile metin çıkarılıyor...');
-
-      // TODO: Tesseract.js entegrasyonu
-      // const worker = await Tesseract.createWorker('tur');
-      // const { data: { text, confidence } } = await worker.recognize(imageBase64);
-      // await worker.terminate();
-
-      // Simülasyon
-      return {
-        success: true,
-        text: 'FATURA NO: 12345\nMÜŞTERİ: ABC Ltd. Şti.\nTARİH: 01.01.2024\nTUTAR: ₺1,200.00',
-        confidence: 0.85,
-      };
-    } catch (error) {
-      console.error('Tesseract hatası:', error);
-      return { success: false, error: 'Metin çıkarılamadı' };
-    }
-  }
-
-  /**
-   * Resimden metin çıkarır (seçilen provider'a göre)
+   * Resimden metin çıkarır (Simülasyon)
    */
   async extractTextFromImage(imageBase64: string): Promise<OCRResult> {
-    if (!this.config) {
-      return { success: false, error: 'OCR servisi yapılandırılmadı' };
-    }
+    console.log('OCR metin çıkarma simülasyonu başlatıldı...');
 
-    if (this.config.provider === 'google-vision') {
-      return await this.extractTextFromImageGoogleVision(imageBase64);
-    } else {
-      return await this.extractTextFromImageTesseract(imageBase64);
-    }
+    // Simülasyon gecikmesi
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const mockTexts = [
+      'FATURA NO: ABC20240000001\nTARİH: 15.01.2024\nVKN: 1234567890\nALICI: TEST TEKNOLOJİ A.Ş.\nTOPLAM: 1.440,00 TL',
+      'INVOICE #INV-9982\nDATE: 2024-02-10\nTAX ID: 0987654321\nCUSTOMER: GLOBAL LOJİSTİK LTD.\nTOTAL AMOUNT: 5.250,50 ₺',
+    ];
+
+    return {
+      success: true,
+      text: mockTexts[Math.floor(Math.random() * mockTexts.length)],
+      confidence: 0.92 + Math.random() * 0.05
+    };
   }
 
   /**
-   * PDF'den metin çıkarır
+   * PDF'den metin çıkarır (Simülasyon)
    */
   async extractTextFromPDF(pdfBase64: string): Promise<OCRResult> {
-    try {
-      console.log('PDF\'den metin çıkarılıyor...');
+    console.log('PDF OCR simülasyonu başlatıldı...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // TODO: PDF parsing entegrasyonu
-      // const pdfjsLib = await import('pdfjs-dist');
-      // const pdf = await pdfjsLib.getDocument({ data: pdfBase64 }).promise;
-      // let fullText = '';
-      // for (let i = 1; i <= pdf.numPages; i++) {
-      //   const page = await pdf.getPage(i);
-      //   const textContent = await page.getTextContent();
-      //   const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      //   fullText += pageText + '\n';
-      // }
-
-      // Simülasyon
-      return {
-        success: true,
-        text: 'FATURA NO: 12345\nMÜŞTERİ: ABC Ltd. Şti.\nTARİH: 01.01.2024\nTUTAR: ₺1,200.00',
-        confidence: 0.90,
-      };
-    } catch (error) {
-      console.error('PDF metin çıkarma hatası:', error);
-      return { success: false, error: 'PDF\'den metin çıkarılamadı' };
-    }
+    return {
+      success: true,
+      text: 'PDF DETECTED: FATURA NO: PDF-2024-XP\nTARİH: 20.01.2024\nTOPLAM: 2.100,00 ₺',
+      confidence: 0.98
+    };
   }
 
   /**
-   * Çıkarılan metinden fatura bilgilerini ayrıştırır
+   * Metinden fatura bilgilerini ayrıştırır (Geliştirilmiş Simülasyon)
    */
   async parseInvoiceFromText(text: string): Promise<ParsedInvoiceData | null> {
-    try {
-      console.log('Metinden fatura bilgisi ayrıştırılıyor...');
+    console.log('Metin ayrıştırılıyor:', text.substring(0, 50) + '...');
 
-      const lines = text.split('\n');
-      const result: ParsedInvoiceData = {};
+    const result: ParsedInvoiceData = {};
 
-      // Firma adı tespiti
-      const companyPatterns = [
-        /(?:MÜŞTERİ|FİRMA|ŞİRKET)[:\s]+([A-ZÇĞİÖŞÜ\s]+(?:Ltd\.|A\.Ş\.|Şti\.|Tic\.))/i,
-        /([A-ZÇĞİÖŞÜ\s]+(?:Ltd\.|A\.Ş\.|Şti\.|Tic\.))/i,
-      ];
-      for (const pattern of companyPatterns) {
-        const match = text.match(pattern);
-        if (match) {
-          result.customerName = match[1] || match[0];
-          break;
-        }
-      }
+    // Gelişmiş RegEx tespiti simülasyonu
+    const taxMatch = text.match(/(?:VKN|TAX ID|Vergi No)[:\s]*(\d{10})/i);
+    if (taxMatch) result.taxNumber = taxMatch[1];
 
-      // Vergi numarası tespiti
-      const taxNumberPatterns = [
-        /(?:VKN|VERGİ\s*NO|Vergi\s*Numarası)[:\s]*(\d{10})/i,
-        /V\.K\.N\.[:\s]*(\d{10})/i,
-      ];
-      for (const pattern of taxNumberPatterns) {
-        const match = text.match(pattern);
-        if (match) {
-          result.taxNumber = match[1];
-          break;
-        }
-      }
+    const dateMatch = text.match(/(\d{2}[./-]\d{2}[./-]\d{4})/);
+    if (dateMatch) result.date = dateMatch[1];
 
-      // Tarih tespiti
-      const datePatterns = [
-        /(?:TARİH|DATE|FATURA\s*TARİHİ)[:\s]*(\d{2}[./-]\d{2}[./-]\d{4})/i,
-        /(\d{2}[./-]\d{2}[./-]\d{4})/,
-      ];
-      for (const pattern of datePatterns) {
-        const match = text.match(pattern);
-        if (match) {
-          result.date = match[1];
-          break;
-        }
-      }
+    const totalMatch = text.match(/(?:TOPLAM|TOTAL|TUTAR)[:\s]*₺?[\s]*(\d+[.,]\d{2})/i);
+    if (totalMatch) result.total = parseFloat(totalMatch[1].replace('.', '').replace(',', '.'));
 
-      // Fatura numarası tespiti
-      const invoiceNumberPatterns = [
-        /(?:FATURA\s*NO|FATURA\s*NUMARASI|INVOICE\s*NO)[:\s]*([A-Z0-9-]+)/i,
-        /FATURA[:\s]*([A-Z0-9-]+)/i,
-      ];
-      for (const pattern of invoiceNumberPatterns) {
-        const match = text.match(pattern);
-        if (match) {
-          result.invoiceNumber = match[1];
-          break;
-        }
-      }
+    const invoiceMatch = text.match(/(?:FATURA NO|INVOICE #)[:\s]*([A-Z0-9-]+)/i);
+    if (invoiceMatch) result.invoiceNumber = invoiceMatch[1];
 
-      // Tutar tespiti
-      const amountPatterns = [
-        /(?:TOPLAM|TUTAR|TOTAL|AMOUNT)[:\s]*₺?[\s]*(\d+[.,]\d{2})/i,
-        /₺[\s]*(\d+[.,]\d{2})/,
-      ];
-      for (const pattern of amountPatterns) {
-        const match = text.match(pattern);
-        if (match) {
-          result.total = parseFloat(match[1].replace(',', '.'));
-          break;
-        }
-      }
+    // Örnek kalem ekleme
+    result.items = [
+      { description: 'Genel Hizmet Bedeli', quantity: 1, unitPrice: result.total ? result.total / 1.2 : 0, vatRate: 20 }
+    ];
 
-      return Object.keys(result).length > 0 ? result : null;
-    } catch (error) {
-      console.error('Fatura bilgisi ayrıştırma hatası:', error);
-      return null;
-    }
+    return Object.keys(result).length > 0 ? result : null;
   }
 
   /**
    * Dosyadan fatura bilgilerini çıkarır (tam akış)
    */
-  async extractInvoiceFromFile(file: File): Promise<{
+  async extractInvoiceFromFile(fileData: { buffer: Buffer; mimeType: string }): Promise<{
     success: boolean;
     data?: ParsedInvoiceData;
     error?: string;
   }> {
     try {
-      // Dosyayı base64'e çevir
-      const base64 = await this.fileToBase64(file);
-
       let ocrResult: OCRResult;
 
-      // Dosya tipine göre işlem yap
-      if (file.type === 'application/pdf') {
-        ocrResult = await this.extractTextFromPDF(base64);
-      } else if (file.type.startsWith('image/')) {
-        ocrResult = await this.extractTextFromImage(base64);
+      if (fileData.mimeType === 'application/pdf') {
+        ocrResult = await this.extractTextFromPDF(fileData.buffer.toString('base64'));
       } else {
-        return { success: false, error: 'Desteklenmeyen dosya formatı' };
+        ocrResult = await this.extractTextFromImage(fileData.buffer.toString('base64'));
       }
 
-      if (!ocrResult.success) {
-        return { success: false, error: ocrResult.error };
-      }
+      if (!ocrResult.success) return { success: false, error: ocrResult.error };
 
-      // Metinden fatura bilgisi çıkar
       const parsedData = await this.parseInvoiceFromText(ocrResult.text || '');
 
       return {
@@ -273,28 +155,11 @@ class OCRService {
         data: parsedData || undefined,
       };
     } catch (error) {
-      console.error('Dosyadan fatura çıkarma hatası:', error);
-      return { success: false, error: 'Fatura çıkarılamadı' };
+      console.error('OCR Process Error:', error);
+      return { success: false, error: 'İşlem sırasında hata oluştu.' };
     }
-  }
-
-  /**
-   * Dosyayı base64'e çevirir
-   */
-  private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   }
 }
 
-// Singleton instance
 const ocrService = new OCRService();
-
 export default ocrService;

@@ -11,6 +11,11 @@ export interface ICompany extends Document {
   gibUsername?: string;
   gibPassword?: string;
   gibAlias?: string;
+  ocrProvider?: 'google-vision' | 'tesseract';
+  ocrApiKey?: string;
+  gmailClientId?: string;
+  gmailClientSecret?: string;
+  gmailRefreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +61,23 @@ const CompanySchema = new Schema<ICompany>(
       type: String,
     },
     gibAlias: {
+      type: String,
+    },
+    ocrProvider: {
+      type: String,
+      enum: ['google-vision', 'tesseract'],
+      default: 'tesseract',
+    },
+    ocrApiKey: {
+      type: String,
+    },
+    gmailClientId: {
+      type: String,
+    },
+    gmailClientSecret: {
+      type: String,
+    },
+    gmailRefreshToken: {
       type: String,
     },
   },

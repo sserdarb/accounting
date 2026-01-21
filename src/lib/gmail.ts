@@ -5,251 +5,137 @@
  * E-posta eklerinden fatura tespit ve işleme yapar.
  */
 
-interface GmailConfig {
+export interface GmailConfig {
   clientId: string;
   clientSecret: string;
   refreshToken: string;
 }
 
-interface EmailMessage {
+export interface EmailMessage {
   id: string;
   subject: string;
   from: string;
   date: string;
   hasAttachments: boolean;
-  attachments: {
+  snippet?: string;
+  attachments?: {
+    id: string;
     filename: string;
     contentType: string;
-    data: string; // base64
+    size: number;
   }[];
-}
-
-interface ParsedInvoice {
-  customerName?: string;
-  taxNumber?: string;
-  date?: string;
-  amount?: number;
-  vat?: number;
-  invoiceNumber?: string;
 }
 
 class GmailService {
   private config: GmailConfig | null = null;
   private accessToken: string | null = null;
 
-  /**
-   * Gmail API'ye bağlanır
-   */
-  async connect(config: GmailConfig): Promise<boolean> {
+  async initializeWithCompany(companyId: string): Promise<boolean> {
     try {
-      this.config = config;
-      
-      console.log('Gmail API bağlantısı kuruluyor...');
+      const Company = (await import('@/models/Company')).default;
+      const connectDB = (await import('@/lib/mongodb')).default;
 
-      // TODO: Gerçek OAuth2 akışı
-      // const oauth2Client = new OAuth2Client(
-      //   config.clientId,
-      //   config.clientSecret,
-      //   'https://developers.google.com/oauthplayground'
-      // );
-      // oauth2Client.setCredentials({ refresh_token: config.refreshToken });
-      // const { credentials } = await oauth2Client.refreshAccessToken();
-      // this.accessToken = credentials.access_token;
+      await connectDB();
+      const company = await Company.findById(companyId);
+
+      if (!company || !company.gmailClientId || !company.gmailClientSecret) {
+        console.warn('Gmail yapılandırması eksik');
+        return false;
+      }
+
+      this.config = {
+        clientId: company.gmailClientId,
+        clientSecret: company.gmailClientSecret,
+        refreshToken: company.gmailRefreshToken || ''
+      };
 
       return true;
     } catch (error) {
-      console.error('Gmail API bağlantı hatası:', error);
+      console.error('Gmail Servis İlklendirme Hatası:', error);
       return false;
     }
   }
 
+  async connect(config?: GmailConfig): Promise<boolean> {
+    if (config) this.config = config;
+
+    if (!this.config) {
+      console.warn('Gmail yapılandırması bulunamadı. Önce initializeWithCompany çağrılmalı or config geçilmeli.');
+      return false;
+    }
+
+    console.log('Gmail API bağlantısı simüle ediliyor...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    this.accessToken = 'mock-access-token';
+    return true;
+  }
+
   /**
-   * Son e-postaları getirir
+   * Son e-postaları getirir (Simülasyon)
    */
-  async getRecentEmails(maxResults: number = 50): Promise<EmailMessage[]> {
-    try {
-      if (!this.config || !this.accessToken) {
-        return [];
+  async getRecentEmails(maxResults: number = 20): Promise<EmailMessage[]> {
+    console.log('Gmail gelen kutusu taranıyor...');
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    return [
+      {
+        id: 'msg-001',
+        subject: 'Fatura: Ocak 2024 Telefon Gideri',
+        from: 'Turkcell <fatura@turkcell.com.tr>',
+        date: new Date().toISOString(),
+        hasAttachments: true,
+        snippet: 'Değerli müşterimiz, Ocak 2024 dönemi faturanız ekte yer almaktadır...',
+        attachments: [{ id: 'att-01', filename: 'Fatura_Ocak24.pdf', contentType: 'application/pdf', size: 102400 }]
+      },
+      {
+        id: 'msg-002',
+        subject: 'Amazon.com.tr Siparişiniz',
+        from: 'Amazon <order-update@amazon.com.tr>',
+        date: new Date().toISOString(),
+        hasAttachments: false,
+        snippet: 'Siparişiniz yola çıktı. Faturanıza hesabınızdan ulaşabilirsiniz...'
+      },
+      {
+        id: 'msg-003',
+        subject: 'E-Arşiv Fatura Bilgilendirmesi',
+        from: 'DigitalOcean <billing@digitalocean.com>',
+        date: new Date().toISOString(),
+        hasAttachments: true,
+        snippet: 'Your monthly invoice is now available for download...',
+        attachments: [{ id: 'att-02', filename: 'Invoice_DO_99.pdf', contentType: 'application/pdf', size: 55200 }]
       }
-
-      console.log('Son e-postalar getiriliyor...');
-
-      // TODO: Gerçek API çağrısı
-      // const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-      // const response = await gmail.users.messages.list({
-      //   userId: 'me',
-      //   maxResults,
-      // });
-
-      // Simülasyon
-      return [];
-    } catch (error) {
-      console.error('E-postalar getirme hatası:', error);
-      return [];
-    }
+    ];
   }
 
   /**
-   * E-posta detaylarını getirir
+   * E-posta ekini simüle eder
    */
-  async getEmailDetail(messageId: string): Promise<EmailMessage | null> {
-    try {
-      if (!this.config || !this.accessToken) {
-        return null;
-      }
-
-      console.log('E-posta detayları getiriliyor:', messageId);
-
-      // TODO: Gerçek API çağrısı
-      // const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-      // const response = await gmail.users.messages.get({
-      //   userId: 'me',
-      //   id: messageId,
-      //   format: 'full',
-      // });
-
-      // Simülasyon
-      return null;
-    } catch (error) {
-      console.error('E-posta detayları getirme hatası:', error);
-      return null;
-    }
+  async getAttachment(messageId: string, attachmentId: string): Promise<Buffer> {
+    console.log(`Ek indiriliyor: ${attachmentId} (Mesaj: ${messageId})`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return Buffer.from('SIMULATED_PDF_BINARY_DATA');
   }
 
   /**
-   * E-posta eklerini indirir
+   * Otomatik fatura işleme (Simülasyon)
    */
-  async downloadAttachment(messageId: string, attachmentId: string): Promise<{ success: boolean; data?: string; error?: string }> {
-    try {
-      if (!this.config || !this.accessToken) {
-        return { success: false, error: 'Gmail API bağlantısı yok' };
-      }
+  async processInvoiceEmails(): Promise<{ success: boolean; count: number; invoices: any[] }> {
+    console.log('Otomatik fatura işleme akışı başlatıldı...');
+    const emails = await this.getRecentEmails();
+    const invoiceEmails = emails.filter(e => e.hasAttachments && (e.subject.toLowerCase().includes('fatura') || e.subject.toLowerCase().includes('invoice')));
 
-      console.log('E-posta eki indiriliyor:', messageId, attachmentId);
-
-      // TODO: Gerçek API çağrısı
-      // const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-      // const response = await gmail.users.messages.attachments.get({
-      //   userId: 'me',
-      //   messageId,
-      //   id: attachmentId,
-      // });
-
-      return { success: true, data: 'base64-encoded-data' };
-    } catch (error) {
-      console.error('E-posta eki indirme hatası:', error);
-      return { success: false, error: 'Ek indirilemedi' };
-    }
-  }
-
-  /**
-   * Fatura içeren e-postaları tespit eder
-   */
-  async detectInvoiceEmails(): Promise<EmailMessage[]> {
-    try {
-      const emails = await this.getRecentEmails(100);
-
-      // Fatura içeren e-postaları filtrele
-      const invoiceEmails = emails.filter(email => {
-        const subject = email.subject.toLowerCase();
-        return subject.includes('fatura') ||
-               subject.includes('invoice') ||
-               subject.includes('makbuz') ||
-               subject.includes('receipt');
-      });
-
-      return invoiceEmails;
-    } catch (error) {
-      console.error('Fatura e-postaları tespit hatası:', error);
-      return [];
-    }
-  }
-
-  /**
-   * E-posta içeriğinden fatura bilgilerini çıkarır
-   */
-  async parseInvoiceFromEmail(email: EmailMessage): Promise<ParsedInvoice | null> {
-    try {
-      console.log('E-postadan fatura bilgisi çıkarılıyor:', email.id);
-
-      // TODO: Gerçek parsing mantığı
-      // 1. E-posta içeriğini analiz et
-      // 2. Fatura bilgilerini tespit et
-      // 3. Structured data döndür
-
-      // Simülasyon
-      return null;
-    } catch (error) {
-      console.error('Fatura bilgisi çıkarma hatası:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Otomatik fatura işleme başlatır
-   */
-  async startAutoProcessing(): Promise<{ success: boolean; processed: number; error?: string }> {
-    try {
-      console.log('Otomatik fatura işleme başlatılıyor...');
-
-      const invoiceEmails = await this.detectInvoiceEmails();
-      let processedCount = 0;
-
-      for (const email of invoiceEmails) {
-        // E-posta detaylarını al
-        const emailDetail = await this.getEmailDetail(email.id);
-        
-        if (emailDetail && emailDetail.hasAttachments) {
-          // Ekleri indir ve işle
-          for (const attachment of emailDetail.attachments) {
-            // PDF veya resim dosyalarını işle
-            if (attachment.contentType.includes('pdf') || 
-                attachment.contentType.includes('image')) {
-              // TODO: OCR servisi ile işle
-              processedCount++;
-            }
-          }
-        } else {
-          // E-posta içeriğini işle
-          const parsedInvoice = await this.parseInvoiceFromEmail(email);
-          if (parsedInvoice) {
-            // TODO: Fatura oluştur
-            processedCount++;
-          }
-        }
-      }
-
-      return { success: true, processed: processedCount };
-    } catch (error) {
-      console.error('Otomatik fatura işleme hatası:', error);
-      return { success: false, processed: 0, error: 'İşleme başarısız' };
-    }
-  }
-
-  /**
-   * Gmail API bağlantısını test eder
-   */
-  async testConnection(): Promise<{ success: boolean; message: string }> {
-    try {
-      if (!this.config) {
-        return { success: false, message: 'Gmail API yapılandırması yok' };
-      }
-
-      console.log('Gmail API bağlantısı test ediliyor...');
-
-      // TODO: Gerçek API çağrısı
-      // const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-      // const response = await gmail.users.getProfile({ userId: 'me' });
-
-      return { success: true, message: 'Gmail API bağlantısı başarılı' };
-    } catch (error) {
-      console.error('Gmail API test hatası:', error);
-      return { success: false, message: 'Gmail API bağlantısı başarısız' };
-    }
+    return {
+      success: true,
+      count: invoiceEmails.length,
+      invoices: invoiceEmails.map(e => ({
+        source: 'email',
+        subject: e.subject,
+        from: e.from,
+        attachmentCount: e.attachments?.length || 0
+      }))
+    };
   }
 }
 
-// Singleton instance
 const gmailService = new GmailService();
-
 export default gmailService;

@@ -5,14 +5,14 @@
  * Gerçek üretim ortamında GİB'nin resmi API'si kullanılmalıdır.
  */
 
-interface GIBConfig {
+export interface GIBConfig {
   username: string;
   password: string;
   vkn: string; // Vergi Kimlik Numarası
   alias: string; // Portal Alias
 }
 
-interface InvoiceData {
+export interface InvoiceData {
   invoiceNumber: string;
   invoiceDate: string;
   invoiceType: 'SATIS' | 'ALIS';
@@ -30,10 +30,12 @@ interface InvoiceData {
   total: number;
 }
 
-interface InvoiceStatus {
-  uuid: string;
-  status: 'DRAFT' | 'SENT' | 'READ' | 'ACCEPTED' | 'REJECTED' | 'ERROR';
-  errorMessage?: string;
+export interface GIBResponse {
+  success: boolean;
+  uuid?: string;
+  status?: 'SUCCESS' | 'PENDING' | 'ERROR';
+  code?: string;
+  message?: string;
 }
 
 class GIBService {
@@ -41,28 +43,56 @@ class GIBService {
   private baseUrl: string;
 
   constructor() {
-    // GİB API URL (gerçek ortamda resmi URL kullanılmalı)
     this.baseUrl = process.env.GIB_API_URL || 'https://efatura-test.gib.gov.tr';
+  }
+
+  /**
+   * Servisi belirli bir şirket yapılandırmasıyla ilklendirir
+   */
+  async initializeWithCompany(companyId: string): Promise<boolean> {
+    try {
+      const Company = (await import('@/models/Company')).default;
+      const connectDB = (await import('@/lib/mongodb')).default;
+
+      await connectDB();
+      const company = await Company.findById(companyId);
+
+      if (!company || !company.gibUsername || !company.gibPassword) {
+        console.warn('GİB yapılandırması eksik');
+        return false;
+      }
+
+      this.config = {
+        vkn: company.taxNumber,
+        username: company.gibUsername,
+        password: company.gibPassword,
+        alias: company.gibAlias || 'default'
+      };
+
+      return true;
+    } catch (error) {
+      console.error('GİB Servis İlklendirme Hatası:', error);
+      return false;
+    }
   }
 
   /**
    * GİB API'ye bağlanır ve yapılandırır
    */
-  async connect(config: GIBConfig): Promise<boolean> {
+  async connect(config?: GIBConfig): Promise<boolean> {
     try {
-      this.config = config;
-      
-      // Gerçek API çağrısı simülasyonu
-      console.log('GİB API bağlantısı kuruluyor...', config);
-      
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.post(`${this.baseUrl}/login`, {
-      //   username: config.username,
-      //   password: config.password,
-      //   vkn: config.vkn,
-      //   alias: config.alias,
-      // });
-      
+      if (config) this.config = config;
+
+      if (!this.config) {
+        console.warn('GİB yapılandırması bulunamadı. Önce initializeWithCompany çağrılmalı veya config geçilmeli.');
+        return false;
+      }
+
+      console.log('GİB API bağlantısı kuruluyor...', { vkn: this.config.vkn, alias: this.config.alias });
+
+      // Simülasyon gecikmesi
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       return true;
     } catch (error) {
       console.error('GİB API bağlantı hatası:', error);
@@ -71,193 +101,63 @@ class GIBService {
   }
 
   /**
-   * E-Fatura oluşturur
+   * E-Fatura gönderir (Simülasyon)
    */
-  async createInvoice(invoiceData: InvoiceData): Promise<{ success: boolean; uuid?: string; error?: string }> {
+  async sendInvoice(invoiceData: InvoiceData): Promise<GIBResponse> {
     try {
-      if (!this.config) {
-        return { success: false, error: 'GİB API bağlantısı yok' };
+      console.log('E-Fatura GİB sistemine gönderiliyor:', invoiceData.invoiceNumber);
+
+      // Simülasyon gecikmesi
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // %10 olasılıkla hata simülasyonu
+      if (Math.random() < 0.1) {
+        return {
+          success: false,
+          code: '1161',
+          message: 'Hatalı VKN/TCKN formatı veya geçersiz mükellef.',
+          status: 'ERROR'
+        };
       }
 
-      console.log('E-Fatura oluşturuluyor:', invoiceData);
+      const uuid = `EFAT-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.post(`${this.baseUrl}/invoice/create`, {
-      //   ...invoiceData,
-      //   username: this.config.username,
-      //   password: this.config.password,
-      // });
-
-      // Simülasyon - UUID oluştur
-      const uuid = `EFAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      return { success: true, uuid };
-    } catch (error) {
-      console.error('E-Fatura oluşturma hatası:', error);
-      return { success: false, error: 'Fatura oluşturulamadı' };
-    }
-  }
-
-  /**
-   * E-Fatura gönderir
-   */
-  async sendInvoice(uuid: string): Promise<{ success: boolean; status?: string; error?: string }> {
-    try {
-      if (!this.config) {
-        return { success: false, error: 'GİB API bağlantısı yok' };
-      }
-
-      console.log('E-Fatura gönderiliyor:', uuid);
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.post(`${this.baseUrl}/invoice/send`, {
-      //   uuid,
-      //   username: this.config.username,
-      //   password: this.config.password,
-      // });
-
-      return { success: true, status: 'SENT' };
-    } catch (error) {
-      console.error('E-Fatura gönderme hatası:', error);
-      return { success: false, error: 'Fatura gönderilemedi' };
-    }
-  }
-
-  /**
-   * Fatura durumunu kontrol eder
-   */
-  async getInvoiceStatus(uuid: string): Promise<InvoiceStatus | null> {
-    try {
-      if (!this.config) {
-        return null;
-      }
-
-      console.log('Fatura durumu kontrol ediliyor:', uuid);
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.get(`${this.baseUrl}/invoice/status/${uuid}`, {
-      //   params: {
-      //     username: this.config.username,
-      //     password: this.config.password,
-      //   },
-      // });
-
-      // Simülasyon
       return {
+        success: true,
         uuid,
-        status: 'SENT',
+        status: 'SUCCESS',
+        code: '1000',
+        message: 'Fatura başarıyla GİB sistemine iletildi.'
       };
     } catch (error) {
-      console.error('Fatura durumu kontrol hatası:', error);
-      return null;
+      console.error('GİB Gönderim Hatası:', error);
+      return { success: false, message: 'Fatura gönderilirken teknik bir hata oluştu.', status: 'ERROR' };
     }
   }
 
   /**
-   * Gelen e-faturaları listeler
+   * Fatura durumunu sorgular (Simülasyon)
    */
-  async getInboundInvoices(startDate: string, endDate: string): Promise<any[]> {
-    try {
-      if (!this.config) {
-        return [];
-      }
+  async getInvoiceStatus(uuid: string): Promise<GIBResponse> {
+    const statuses: Array<'SUCCESS' | 'PENDING' | 'ERROR'> = ['SUCCESS', 'PENDING', 'SUCCESS', 'SUCCESS'];
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
 
-      console.log('Gelen e-faturalar listeleniyor:', { startDate, endDate });
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.get(`${this.baseUrl}/invoice/inbound`, {
-      //   params: {
-      //     username: this.config.username,
-      //     password: this.config.password,
-      //     startDate,
-      //     endDate,
-      //   },
-      // });
-
-      // Simülasyon
-      return [];
-    } catch (error) {
-      console.error('Gelen e-faturalar listeleme hatası:', error);
-      return [];
-    }
+    return {
+      success: true,
+      uuid,
+      status: randomStatus,
+      message: randomStatus === 'SUCCESS' ? 'Fatura onaylandı.' : 'Fatura kuyrukta bekliyor.',
+      code: randomStatus === 'SUCCESS' ? '1200' : '1100'
+    };
   }
 
   /**
-   * E-Fatura PDF'ini indirir
+   * E-Fatura PDF içeriğini simüle eder
    */
-  async downloadInvoicePDF(uuid: string): Promise<{ success: boolean; pdfData?: string; error?: string }> {
-    try {
-      if (!this.config) {
-        return { success: false, error: 'GİB API bağlantısı yok' };
-      }
-
-      console.log('E-Fatura PDF indiriliyor:', uuid);
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.get(`${this.baseUrl}/invoice/pdf/${uuid}`, {
-      //   params: {
-      //     username: this.config.username,
-      //     password: this.config.password,
-      //   },
-      //   responseType: 'arraybuffer',
-      // });
-
-      return { success: true, pdfData: 'base64-encoded-pdf-data' };
-    } catch (error) {
-      console.error('E-Fatura PDF indirme hatası:', error);
-      return { success: false, error: 'PDF indirilemedi' };
-    }
-  }
-
-  /**
-   * E-Fatura iptal eder
-   */
-  async cancelInvoice(uuid: string, reason: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      if (!this.config) {
-        return { success: false, error: 'GİB API bağlantısı yok' };
-      }
-
-      console.log('E-Fatura iptal ediliyor:', uuid, reason);
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.post(`${this.baseUrl}/invoice/cancel`, {
-      //   uuid,
-      //   reason,
-      //   username: this.config.username,
-      //   password: this.config.password,
-      // });
-
-      return { success: true };
-    } catch (error) {
-      console.error('E-Fatura iptal hatası:', error);
-      return { success: false, error: 'Fatura iptal edilemedi' };
-    }
-  }
-
-  /**
-   * GİB API bağlantısını test eder
-   */
-  async testConnection(): Promise<{ success: boolean; message: string }> {
-    try {
-      if (!this.config) {
-        return { success: false, message: 'GİB API yapılandırması yok' };
-      }
-
-      console.log('GİB API bağlantısı test ediliyor...');
-
-      // TODO: Gerçek API çağrısı
-      // const response = await axios.get(`${this.baseUrl}/health`);
-
-      return { success: true, message: 'GİB API bağlantısı başarılı' };
-    } catch (error) {
-      console.error('GİB API test hatası:', error);
-      return { success: false, message: 'GİB API bağlantısı başarısız' };
-    }
+  async getInvoicePDF(uuid: string): Promise<string> {
+    return `SIMULATED_PDF_CONTENT_FOR_${uuid}`;
   }
 }
 
-// Singleton instance
 const gibService = new GIBService();
-
 export default gibService;

@@ -1,57 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import Contact from '@/models/Contact';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/contacts - Get all contacts
 export async function GET(request: NextRequest) {
   try {
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
+    }
+
+    await connectDB();
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const type = searchParams.get('type') || 'all';
     const search = searchParams.get('search') || '';
 
-    // TODO: Implement actual database query
-    // 1. Build query filters based on params
-    // 2. Fetch contacts from database
-    // 3. Paginate results
-    // 4. Return paginated contacts
+    // Build query
+    const query: any = { companyId: decoded.companyId };
 
-    // Mock response for now
-    const mockContacts = [
-      {
-        id: '1',
-        type: 'customer',
-        name: 'ABC Ltd. Şti.',
-        taxNumber: '1234567890',
-        taxOffice: 'İstanbul Vergi Dairesi',
-        address: 'Maslak Mah. Büyükdere Cad. No:123',
-        phone: '+90 212 123 45 67',
-        email: 'info@abcltd.com',
-        balance: 1200,
-      },
-      {
-        id: '2',
-        type: 'supplier',
-        name: 'XYZ A.Ş.',
-        taxNumber: '0987654321',
-        taxOffice: 'Ankara Vergi Dairesi',
-        address: 'Çankaya Mah. Atatürk Bulvarı No:456',
-        phone: '+90 312 987 65 43',
-        email: 'info@xyzas.com',
-        balance: -3500,
-      },
-    ];
+    if (type !== 'all') {
+      query.type = type;
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { taxNumber: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [contacts, total] = await Promise.all([
+      Contact.find(query)
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Contact.countDocuments(query),
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: mockContacts,
+      data: contacts,
       pagination: {
         page,
         limit,
-        total: mockContacts.length,
-        totalPages: Math.ceil(mockContacts.length / limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
+    console.error('Fetch contacts error:', error);
     return NextResponse.json(
       { error: 'Cari hesaplar alınamadı' },
       { status: 500 }
@@ -62,6 +72,16 @@ export async function GET(request: NextRequest) {
 // POST /api/contacts - Create new contact
 export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { type, name, taxNumber, taxOffice, address, phone, email } = body;
 
@@ -73,49 +93,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Tax number validation
-    if (!/^\d{10}$/.test(taxNumber)) {
+    await connectDB();
+
+    // Check if contact already exists for this company
+    const existingContact = await Contact.findOne({
+      companyId: decoded.companyId,
+      taxNumber,
+    });
+
+    if (existingContact) {
       return NextResponse.json(
-        { error: 'Vergi numarası 10 haneli olmalı' },
+        { error: 'Bu vergi numarasına sahip cari zaten mevcut' },
         { status: 400 }
       );
     }
 
-    // Email validation
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { error: 'Geçersiz e-posta adresi' },
-        { status: 400 }
-      );
-    }
+    // Create contact
+    const newContact = new Contact({
+      type,
+      name,
+      taxNumber,
+      taxOffice,
+      address,
+      phone,
+      email,
+      companyId: decoded.companyId,
+    });
 
-    // TODO: Implement actual contact creation
-    // 1. Check if tax number already exists
-    // 2. Create contact in database
-    // 3. Return created contact
+    await newContact.save();
 
-    // Mock response for now
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: Date.now().toString(),
-          type,
-          name,
-          taxNumber,
-          taxOffice,
-          address,
-          phone,
-          email,
-          balance: 0,
-          companyId: '1',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        data: newContact,
       },
       { status: 201 }
     );
   } catch (error) {
+    console.error('Create contact error:', error);
     return NextResponse.json(
       { error: 'Cari hesap oluşturulamadı' },
       { status: 500 }

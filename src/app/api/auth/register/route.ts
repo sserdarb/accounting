@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       password,
       name,
       role: 'admin',
-      companyId: company._id,
+      companyId: company._id.toString(),
     });
 
     // Generate JWT token

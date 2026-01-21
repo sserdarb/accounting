@@ -34,6 +34,9 @@ export default function LoginPage() {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
 
+        // Set cookie for middleware
+        document.cookie = `token=${data.data.token}; path=/; max-age=604800; samesite=lax`;
+
         // Redirect to dashboard
         window.location.href = '/dashboard';
       } else {

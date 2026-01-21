@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import Invoice from '@/models/Invoice';
+import { verifyToken } from '@/lib/auth';
 
 // GET /api/invoices - Get all invoices
 export async function GET(request: NextRequest) {
   try {
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
+    }
+
+    await connectDB();
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -10,51 +25,48 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all';
     const search = searchParams.get('search') || '';
 
-    // TODO: Implement actual database query
-    // 1. Build query filters based on params
-    // 2. Fetch invoices from database
-    // 3. Paginate results
-    // 4. Return paginated invoices
+    // Build query
+    const query: any = { companyId: decoded.companyId };
 
-    // Mock response for now
-    const mockInvoices = [
-      {
-        id: 'FAT-2024001',
-        type: 'sales',
-        customer: 'ABC Ltd. Şti.',
-        date: '2024-01-15',
-        dueDate: '2024-02-15',
-        amount: 1200,
-        vatAmount: 240,
-        total: 1440,
-        status: 'paid',
-        gibStatus: 'accepted',
-      },
-      {
-        id: 'FAT-2024002',
-        type: 'sales',
-        customer: 'XYZ A.Ş.',
-        date: '2024-01-14',
-        dueDate: '2024-01-20',
-        amount: 3500,
-        vatAmount: 700,
-        total: 4200,
-        status: 'pending',
-        gibStatus: 'viewed',
-      },
-    ];
+    if (type !== 'all') {
+      query.type = type;
+    }
+
+    if (status !== 'all') {
+      query.status = status;
+    }
+
+    if (search) {
+      query.$or = [
+        { invoiceNumber: { $regex: search, $options: 'i' } },
+        { customerName: { $regex: search, $options: 'i' } },
+        { supplierName: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [invoices, total] = await Promise.all([
+      Invoice.find(query)
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Invoice.countDocuments(query),
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: mockInvoices,
+      data: invoices,
       pagination: {
         page,
         limit,
-        total: mockInvoices.length,
-        totalPages: Math.ceil(mockInvoices.length / limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
+    console.error('Fetch invoices error:', error);
     return NextResponse.json(
       { error: 'Faturalar alınamadı' },
       { status: 500 }
@@ -65,12 +77,25 @@ export async function GET(request: NextRequest) {
 // POST /api/invoices - Create new invoice
 export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get('token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       type,
-      customer,
-      taxNumber,
-      taxOffice,
+      customerId,
+      supplierId,
+      customerName,
+      supplierName,
+      customerTaxNumber,
+      supplierTaxNumber,
       date,
       dueDate,
       items,
@@ -78,74 +103,80 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validation
-    if (!type || !customer || !taxNumber || !date || !items || items.length === 0) {
+    if (!type || !date || !items || items.length === 0) {
       return NextResponse.json(
         { error: 'Gerekli alanlar eksik' },
         { status: 400 }
       );
     }
 
-    // Validate items
-    for (const item of items) {
-      if (!item.description || !item.quantity || !item.unitPrice) {
-        return NextResponse.json(
-          { error: 'Fatura kalemleri geçersiz' },
-          { status: 400 }
-        );
-      }
-    }
+    await connectDB();
 
     // Calculate totals
     const subtotal = items.reduce(
-      (sum: number, item: any) => sum + item.quantity * item.unitPrice,
+      (sum: number, item: any) => sum + (item.quantity * item.unitPrice),
       0
     );
+
     const vatAmount = items.reduce(
       (sum: number, item: any) =>
-        sum + (item.quantity * item.unitPrice * item.vatRate) / 100,
+        sum + (item.quantity * item.unitPrice * (item.vatRate || 0)) / 100,
       0
     );
+
     const total = subtotal + vatAmount;
 
     // Generate invoice number
-    const invoiceNumber = `FAT-${new Date().getFullYear()}${String(
-      Math.floor(Math.random() * 10000)
-    ).padStart(4, '0')}`;
+    // In a real system, this should be more robust (sequential and unique)
+    const year = new Date(date).getFullYear();
+    const count = await Invoice.countDocuments({
+      companyId: decoded.companyId,
+      date: {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`)
+      }
+    });
 
-    // TODO: Implement actual invoice creation
-    // 1. Validate customer exists
-    // 2. Create invoice in database
-    // 3. Create invoice items
-    // 4. Update customer balance
-    // 5. Send to GIB if applicable
-    // 6. Generate PDF
-    // 7. Return created invoice
+    const invoiceNumber = `FAT-${year}${String(count + 1).padStart(6, '0')}`;
 
-    // Mock response for now
+    // Create invoice
+    const newInvoice = new Invoice({
+      type,
+      status: 'draft',
+      paymentStatus: 'pending',
+      invoiceNumber,
+      date: new Date(date),
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      companyId: decoded.companyId,
+      customerId,
+      supplierId,
+      customerName,
+      supplierName,
+      customerTaxNumber,
+      supplierTaxNumber,
+      items: items.map((item: any) => ({
+        ...item,
+        vatAmount: (item.quantity * item.unitPrice * (item.vatRate || 0)) / 100,
+        total: (item.quantity * item.unitPrice) * (1 + (item.vatRate || 0) / 100)
+      })),
+      subtotal,
+      vatRate: items.length > 0 ? items[0].vatRate : 20, // Default or derived
+      vatAmount,
+      total,
+      notes,
+    });
+
+    await newInvoice.save();
+
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: invoiceNumber,
-          type,
-          customer,
-          taxNumber,
-          taxOffice,
-          date,
-          dueDate,
-          items,
-          subtotal,
-          vatAmount,
-          total,
-          status: 'draft',
-          gibStatus: null,
-          notes,
-          createdAt: new Date().toISOString(),
-        },
+        data: newInvoice,
       },
       { status: 201 }
     );
   } catch (error) {
+    console.error('Create invoice error:', error);
     return NextResponse.json(
       { error: 'Fatura oluşturulamadı' },
       { status: 500 }
