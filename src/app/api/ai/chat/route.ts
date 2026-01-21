@@ -47,7 +47,7 @@ Finansal raporlar, gelir-gider analizi ve KDV beyannamesi konularında yardımc�
                 'X-Title': 'Innovmar Accounting',
             },
             body: JSON.stringify({
-                model: 'anthropic/claude-3-haiku',
+                model: 'deepseek/deepseek-chat',
                 messages: [
                     {
                         role: 'system',

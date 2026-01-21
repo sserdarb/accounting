@@ -38,7 +38,7 @@ Her işlem için JSON formatında cevap ver:
                 'X-Title': 'Innovmar Accounting',
             },
             body: JSON.stringify({
-                model: 'anthropic/claude-3-haiku',
+                model: 'deepseek/deepseek-chat',
                 messages: [
                     {
                         role: 'system',
