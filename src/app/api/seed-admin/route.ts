@@ -8,7 +8,8 @@ import Company from '@/models/Company';
 export async function POST(request: NextRequest) {
     try {
         // Check for secret key to prevent unauthorized access
-        const { secret, email, password, name, companyName } = await request.json();
+        const { secret, email: rawEmail, password, name, companyName } = await request.json();
+        const email = rawEmail?.toLowerCase().trim();
 
         if (secret !== process.env.SEED_SECRET && secret !== 'innovmar-seed-2024') {
             return NextResponse.json(

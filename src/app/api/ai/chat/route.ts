@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDb9g1p9ioHbDDt_LNku_NQMzeg6z4zxB0';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // System features for context
 const SYSTEM_FEATURES = `
@@ -88,18 +88,29 @@ Finansal raporlar, gelir-gider analizi ve KDV beyannamesi konularında yardımc�
 PDF ve Excel export butonlarını kullanabileceğini hatırlat.`;
         }
 
+        if (!GEMINI_API_KEY) {
+            console.error('CRITICAL: GEMINI_API_KEY is not defined in environment variables.');
+            return NextResponse.json(
+                { error: 'AI servisi konfigürasyon hatası (API Key eksik)' },
+                { status: 503 }
+            );
+        }
+
+        console.log('Calling Gemini API for chat...');
         const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                system_instruction: {
+                    parts: [{ text: systemPrompt }]
+                },
                 contents: [
                     {
                         role: 'user',
                         parts: [
-                            { text: systemPrompt },
-                            { text: `\n\nKullanıcı sorusu: ${message}` }
+                            { text: message }
                         ]
                     }
                 ],
@@ -112,9 +123,18 @@ PDF ve Excel export butonlarını kullanabileceğini hatırlat.`;
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Gemini API error:', errorText);
+            console.error('Gemini API error (Status:', response.status, '):', errorText);
+
+            // Provide more specific error message if possible
+            let userMessage = 'AI servisi şu an kullanılamıyor';
+            if (response.status === 401 || response.status === 403) {
+                userMessage = 'AI servisi kimlik doğrulama hatası (API Key geçersiz olabilir)';
+            } else if (response.status === 429) {
+                userMessage = 'AI servisi kota sınırına ulaştı, lütfen biraz bekleyin';
+            }
+
             return NextResponse.json(
-                { error: 'AI servisi şu an kullanılamıyor' },
+                { error: userMessage, details: errorText },
                 { status: 503 }
             );
         }
@@ -125,7 +145,7 @@ PDF ve Excel export butonlarını kullanabileceğini hatırlat.`;
         return NextResponse.json({
             success: true,
             response: aiResponse,
-            model: 'gemini-2.0-flash',
+            model: 'gemini-1.5-flash',
         });
     } catch (error) {
         console.error('AI chat error:', error);

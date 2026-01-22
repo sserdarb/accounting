@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,61 +22,73 @@ import {
   Download,
   Trash2,
   Settings,
+  Server,
+  Shield,
+  Loader2
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
+
+interface EmailConfig {
+  imapHost: string;
+  imapPort: string;
+  imapSecure: boolean;
+  imapUser: string;
+  imapPassword: string;
+  smtpHost: string;
+  smtpPort: string;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+}
 
 export default function EmailPage() {
+  const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [connectedEmail, setConnectedEmail] = useState('');
+  const [provider, setProvider] = useState<'gmail' | 'custom'>('gmail');
+
+  const [config, setConfig] = useState<EmailConfig>({
+    imapHost: 'mail.innovmar.cloud',
+    imapPort: '993',
+    imapSecure: true,
+    imapUser: '',
+    imapPassword: '',
+    smtpHost: 'mail.innovmar.cloud',
+    smtpPort: '465',
+    smtpSecure: true,
+    smtpUser: '',
+    smtpPassword: '',
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'processed' | 'pending' | 'error'>('all');
+  const [recentEmails, setRecentEmails] = useState<any[]>([]); // Initialize as empty array
 
-  const recentEmails = [
-    {
-      id: 'EML-001',
-      from: 'musteri@abcltd.com',
-      subject: 'Fatura - FAT-2024001',
-      date: '2024-06-15 14:30',
-      status: 'processed',
-      invoiceCount: 1,
-      hasAttachment: true,
-    },
-    {
-      id: 'EML-002',
-      from: 'finance@xyz.com.tr',
-      subject: 'Ödeme Bildirimi',
-      date: '2024-06-15 11:20',
-      status: 'processed',
-      invoiceCount: 0,
-      hasAttachment: true,
-    },
-    {
-      id: 'EML-003',
-      from: 'info@defticaret.com',
-      subject: 'Fatura #INV-12345',
-      date: '2024-06-14 16:45',
-      status: 'pending',
-      invoiceCount: 0,
-      hasAttachment: true,
-    },
-    {
-      id: 'EML-004',
-      from: 'support@jkltech.com',
-      subject: 'Teknik Destek Talebi',
-      date: '2024-06-14 09:15',
-      status: 'processed',
-      invoiceCount: 0,
-      hasAttachment: false,
-    },
-    {
-      id: 'EML-005',
-      from: 'billing@ghilojistik.com',
-      subject: 'Fatura - Haziran 2024',
-      date: '2024-06-13 15:30',
-      status: 'error',
-      invoiceCount: 0,
-      hasAttachment: true,
-    },
-  ];
+  useEffect(() => {
+    checkConnection();
+  }, []);
+
+  const checkConnection = async () => {
+    try {
+      const res = await fetch('/api/email/connect');
+      const data = await res.json();
+      if (data.success && data.isConnected) {
+        setIsConnected(true);
+        setConnectedEmail(data.email);
+        setProvider(data.provider);
+        if (data.config) {
+          setConfig(prev => ({ ...prev, ...data.config }));
+        }
+      }
+    } catch (error) {
+      console.error('Connection check failed:', error);
+    }
+  };
+
 
   const statistics = {
     totalEmails: 1250,
@@ -88,22 +100,85 @@ export default function EmailPage() {
   };
 
   const handleConnect = async () => {
+    if (provider === 'custom') {
+      if (!config.imapHost || !config.imapUser || !config.imapPassword) {
+        toast({
+          variant: "destructive",
+          title: "Hata",
+          description: "Lütfen gerekli alanları doldurun",
+        });
+        return;
+      }
+    }
+
     setIsConnecting(true);
-    // Simulate OAuth flow
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsConnected(true);
-    setIsConnecting(false);
+    try {
+      const res = await fetch('/api/email/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          ...config,
+          imapPort: parseInt(config.imapPort),
+          smtpPort: parseInt(config.smtpPort),
+          // Use same credentials for SMTP if not provided
+          smtpUser: config.smtpUser || config.imapUser,
+          smtpPassword: config.smtpPassword || config.imapPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setIsConnected(true);
+        setConnectedEmail(data.email || config.imapUser);
+        toast({
+          title: "Başarılı",
+          description: "E-posta bağlantısı kuruldu",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Bağlantı Hatası",
+        description: error.message || "E-posta sunucusuna bağlanılamadı",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleDisconnect = () => {
     setIsConnected(false);
+    setConnectedEmail('');
+    // TODO: Implement backend disconnect endpoint if needing to clear data
   };
 
   const handleSync = async () => {
-    setIsConnecting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsConnecting(false);
-    alert('E-postalar başarıyla senkronize edildi!');
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/email/sync', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        setRecentEmails(data.emails || []);
+        toast({
+          title: "Senkronizasyon Tamamlandı",
+          description: `${data.count} e-posta güncellendi`,
+        });
+      }
+    } catch (error) {
+      console.error('Sync failed', error);
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "E-postalar senkronize edilemedi",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -171,7 +246,7 @@ export default function EmailPage() {
                       <div>
                         <p className="font-medium">Bağlantı Aktif</p>
                         <p className="text-sm text-muted-foreground">
-                          demo@gmail.com
+                          {connectedEmail} ({provider === 'gmail' ? 'Gmail' : 'Özel Sunucu'})
                         </p>
                       </div>
                     </div>
@@ -199,44 +274,100 @@ export default function EmailPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <XCircle className="h-8 w-8 text-red-600" />
-                      <div>
-                        <p className="font-medium">Bağlantı Pasif</p>
-                        <p className="text-sm text-muted-foreground">
-                          Gmail hesabınızı bağlayın
-                        </p>
+                <Tabs defaultValue="custom" className="w-full" onValueChange={(v) => setProvider(v as any)}>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="custom">Özel Sunucu (IMAP/SMTP)</TabsTrigger>
+                    <TabsTrigger value="gmail">Gmail (OAuth)</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="custom" className="space-y-4">
+                    <div className="grid gap-4 py-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>IMAP Sunucusu</Label>
+                          <Input
+                            placeholder="mail.ornek.com"
+                            value={config.imapHost}
+                            onChange={(e) => setConfig({ ...config, imapHost: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Port</Label>
+                          <Input
+                            placeholder="993"
+                            value={config.imapPort}
+                            onChange={(e) => setConfig({ ...config, imapPort: e.target.value })}
+                          />
+                        </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>E-posta Adresi</Label>
+                          <Input
+                            placeholder="info@ornek.com"
+                            value={config.imapUser}
+                            onChange={(e) => setConfig({ ...config, imapUser: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Şifre</Label>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            value={config.imapPassword}
+                            onChange={(e) => setConfig({ ...config, imapPassword: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          className="w-full"
+                          onClick={handleConnect}
+                          disabled={isConnecting}
+                        >
+                          {isConnecting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Bağlanılıyor...
+                            </>
+                          ) : (
+                            <>
+                              <Server className="mr-2 h-4 w-4" />
+                              Sunucuya Bağlan
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        * SMTP ayarları otomatik olarak IMAP bilgilerini kullanır. Gelişmiş ayarlar için Ayarlar menüsünü kullanın.
+                      </p>
                     </div>
-                    <Badge variant="destructive">Bağlı Değil</Badge>
-                  </div>
+                  </TabsContent>
 
-                  <div className="text-sm text-muted-foreground">
-                    <p className="font-medium mb-2">Bu entegrasyon şunları sağlar:</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>Gelen e-postaları otomatik tara</li>
-                      <li>E-posta eklerinden fatura çıkar</li>
-                      <li>Faturaları otomatik sisteme ekle</li>
-                      <li>Düzenli senkronizasyon</li>
-                    </ul>
-                  </div>
-
-                  <Button onClick={handleConnect} disabled={isConnecting}>
-                    {isConnecting ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Bağlanılıyor...
-                      </>
-                    ) : (
-                      <>
-                        <LinkIcon className="mr-2 h-4 w-4" />
-                        Google ile Bağla
-                      </>
-                    )}
-                  </Button>
-                </div>
+                  <TabsContent value="gmail" className="space-y-4">
+                    <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg">
+                      <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Gmail Hesabınızı Bağlayın</h3>
+                      <p className="text-center text-muted-foreground mb-6 max-w-sm">
+                        Google hesabınızı bağlayarak faturalarınızı otomatik olarak içe aktarın.
+                      </p>
+                      <Button onClick={handleConnect} disabled={isConnecting}>
+                        {isConnecting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Bağlanılıyor...
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="mr-2 h-4 w-4" />
+                            Google ile Giriş Yap
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
           </Card>
@@ -401,64 +532,66 @@ export default function EmailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEmails.map((email) => (
-                      <tr key={email.id} className="border-t hover:bg-muted/50">
-                        <td className="py-3 px-4 text-sm">{email.from}</td>
-                        <td className="py-3 px-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            {email.hasAttachment && (
-                              <FileText className="h-4 w-4 text-muted-foreground" />
+                    {filteredEmails.length > 0 ? (
+                      filteredEmails.map((email) => (
+                        <tr key={email.id} className="border-t hover:bg-muted/50">
+                          <td className="py-3 px-4 text-sm">{email.from}</td>
+                          <td className="py-3 px-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              {email.hasAttachment && (
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span>{email.subject}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm">{new Date(email.date).toLocaleDateString('tr-TR')}</td>
+                          <td className="py-3 px-4">
+                            {getStatusBadge(email.status || 'pending')}
+                          </td>
+                          <td className="py-3 px-4">
+                            {email.invoiceCount > 0 ? (
+                              <Badge variant="default">{email.invoiceCount} Fatura</Badge>
+                            ) : (
+                              <Badge variant="outline">-</Badge>
                             )}
-                            <span>{email.subject}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm">{email.date}</td>
-                        <td className="py-3 px-4">
-                          {getStatusBadge(email.status)}
-                        </td>
-                        <td className="py-3 px-4">
-                          {email.invoiceCount > 0 ? (
-                            <Badge variant="default">{email.invoiceCount} Fatura</Badge>
-                          ) : (
-                            <Badge variant="outline">-</Badge>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {email.invoiceCount > 0 && (
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
                               <Button variant="ghost" size="sm">
-                                <Download className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
+                              {email.invoiceCount > 0 && (
+                                <Button variant="ghost" size="sm">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12">
+                          <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-medium mb-2">E-posta Bulunamadı</h3>
+                          <p className="text-muted-foreground mb-4">
+                            {isConnected ? 'Henüz e-posta bulunamadı veya senkronize edilmedi.' : 'E-posta hesabınızı bağlayın.'}
+                          </p>
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </CardContent>
           </Card>
 
-          {/* Empty State */}
-          {filteredEmails.length === 0 && (
-            <div className="text-center py-12">
-              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">E-posta Bulunamadı</h3>
-              <p className="text-muted-foreground mb-4">
-                Arama kriterlerine uygun e-posta bulunamadı.
-              </p>
-            </div>
-          )}
         </div>
       </main>
     </div>

@@ -13,9 +13,22 @@ export interface ICompany extends Document {
   gibAlias?: string;
   ocrProvider?: 'google-vision' | 'tesseract';
   ocrApiKey?: string;
+  // Gmail OAuth (legacy)
   gmailClientId?: string;
   gmailClientSecret?: string;
   gmailRefreshToken?: string;
+  // Custom Email Server (IMAP/SMTP)
+  imapHost?: string;
+  imapPort?: number;
+  imapSecure?: boolean;
+  imapUser?: string;
+  imapPassword?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPassword?: string;
+  emailProvider?: 'gmail' | 'custom';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +92,44 @@ const CompanySchema = new Schema<ICompany>(
     },
     gmailRefreshToken: {
       type: String,
+    },
+    // Custom Email Server (IMAP/SMTP)
+    imapHost: {
+      type: String,
+    },
+    imapPort: {
+      type: Number,
+    },
+    imapSecure: {
+      type: Boolean,
+      default: true,
+    },
+    imapUser: {
+      type: String,
+    },
+    imapPassword: {
+      type: String,
+    },
+    smtpHost: {
+      type: String,
+    },
+    smtpPort: {
+      type: Number,
+    },
+    smtpSecure: {
+      type: Boolean,
+      default: true,
+    },
+    smtpUser: {
+      type: String,
+    },
+    smtpPassword: {
+      type: String,
+    },
+    emailProvider: {
+      type: String,
+      enum: ['gmail', 'custom'],
+      default: 'gmail',
     },
   },
   {

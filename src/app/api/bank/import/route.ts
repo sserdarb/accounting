@@ -6,7 +6,7 @@ import { verifyToken } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDb9g1p9ioHbDDt_LNku_NQMzeg6z4zxB0';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // Classify transactions using Gemini AI
 async function classifyTransactionsWithAI(transactions: any[]): Promise<any[]> {
@@ -29,12 +29,24 @@ ${transactions.map((t, i) => `${i + 1}. Tarih: ${t.date}, Açıklama: "${t.descr
 Her işlem için JSON formatında cevap ver (SADECE JSON, başka bir şey yazma):
 [{"index": 0, "category": "Kategori"}, ...]`;
 
+        if (!GEMINI_API_KEY) {
+            console.error('CRITICAL: GEMINI_API_KEY is not defined in environment variables.');
+            return transactions.map((t) => ({
+                ...t,
+                category: t.amount >= 0 ? 'Tahsilat' : 'Gider',
+                aiClassified: false,
+            }));
+        }
+
         const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                system_instruction: {
+                    parts: [{ text: "Sen bir finansal veri analisti yardımcısısın. Banka işlemlerini analiz edip verilen kategorilere göre sınıflandırmalısın. Sadece JSON formatında cevap vermelisin." }]
+                },
                 contents: [
                     {
                         role: 'user',
@@ -42,14 +54,15 @@ Her işlem için JSON formatında cevap ver (SADECE JSON, başka bir şey yazma)
                     }
                 ],
                 generationConfig: {
-                    temperature: 0.3,
+                    temperature: 0.1,
                     maxOutputTokens: 2000,
                 },
             }),
         });
 
         if (!response.ok) {
-            console.error('Gemini API error:', await response.text());
+            const errorText = await response.text();
+            console.error('Gemini API error (Status:', response.status, '):', errorText);
             return transactions.map((t) => ({
                 ...t,
                 category: t.amount >= 0 ? 'Tahsilat' : 'Gider',

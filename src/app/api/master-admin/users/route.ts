@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { email, password, name, role, companyId, status } = body;
+        const { email: rawEmail, password, name, role, companyId, status } = body;
+        const email = rawEmail?.toLowerCase().trim();
 
         if (!email || !password || !name || !companyId) {
             return NextResponse.json(
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if email exists
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await User.findOne({ email });
         if (existingUser) {
             return NextResponse.json(
                 { error: 'Bu e-posta adresi zaten kullanımda' },

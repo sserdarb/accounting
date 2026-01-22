@@ -6,7 +6,8 @@ import { generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email: rawEmail, password } = body;
+    const email = rawEmail?.toLowerCase().trim();
 
     // Validation
     if (!email || !password) {
@@ -21,23 +22,36 @@ export async function POST(request: NextRequest) {
 
     // Find user by email
     const user = await User.findOne({ email }).select('+password');
-    
+
     if (!user) {
+      console.warn(`Login attempt failed: User not found with email: ${email}`);
       return NextResponse.json(
         { error: 'Geçersiz e-posta veya şifre' },
         { status: 401 }
       );
     }
 
+    // Check user status
+    if (user.status === 'suspended') {
+      console.warn(`Login attempt failed: Suspended account: ${email}`);
+      return NextResponse.json(
+        { error: 'Hesabınız askıya alınmıştır. Lütfen yönetici ile iletişime geçin.' },
+        { status: 403 }
+      );
+    }
+
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
-    
+
     if (!isPasswordValid) {
+      console.warn(`Login attempt failed: Incorrect password for user: ${email}`);
       return NextResponse.json(
         { error: 'Geçersiz e-posta veya şifre' },
         { status: 401 }
       );
     }
+
+    console.log(`User logged in successfully: ${email}`);
 
     // Generate JWT token
     const token = generateToken({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import AIAssistant from '@/components/AIAssistant';
 import { Button } from '@/components/ui/button';
@@ -44,38 +44,39 @@ export default function ReportsPage() {
     { id: 'cashflow', label: 'Nakit Akışı', icon: LineChart },
   ];
 
-  const revenueData = [
-    { month: 'Ocak', revenue: 45000, expense: 28000, profit: 17000 },
-    { month: 'Şubat', revenue: 52000, expense: 31000, profit: 21000 },
-    { month: 'Mart', revenue: 48000, expense: 29000, profit: 19000 },
-    { month: 'Nisan', revenue: 61000, expense: 35000, profit: 26000 },
-    { month: 'Mayıs', revenue: 55000, expense: 32000, profit: 23000 },
-    { month: 'Haziran', revenue: 67000, expense: 38000, profit: 29000 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [vatData, setVatData] = useState<any[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [cashFlowData, setCashFlowData] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>({
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    invoiceCount: 0
+  });
 
-  const vatData = [
-    { rate: '%1', amount: 1200, count: 45 },
-    { rate: '%8', amount: 8500, count: 120 },
-    { rate: '%10', amount: 6300, count: 85 },
-    { rate: '%18', amount: 18500, count: 200 },
-    { rate: '%20', amount: 9200, count: 95 },
-  ];
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await fetch('/api/reports');
+        const data = await response.json();
+        if (data.success) {
+          setRevenueData(data.revenueData);
+          setVatData(data.vatData);
+          setTopCustomers(data.topCustomers);
+          setCashFlowData(data.cashFlowData);
+          setSummary(data.summary);
+        }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const topCustomers = [
-    { name: 'ABC Ltd. Şti.', total: 125000, invoiceCount: 45, lastInvoice: '2024-06-15' },
-    { name: 'XYZ A.Ş.', total: 98000, invoiceCount: 38, lastInvoice: '2024-06-14' },
-    { name: 'DEF Ticaret', total: 76000, invoiceCount: 32, lastInvoice: '2024-06-12' },
-    { name: 'GHI Lojistik', total: 65000, invoiceCount: 28, lastInvoice: '2024-06-10' },
-    { name: 'JKL Teknoloji', total: 54000, invoiceCount: 25, lastInvoice: '2024-06-08' },
-  ];
-
-  const cashFlowData = [
-    { date: '2024-06-01', inflow: 15000, outflow: 8000, balance: 50000 },
-    { date: '2024-06-05', inflow: 22000, outflow: 12000, balance: 60000 },
-    { date: '2024-06-10', inflow: 18000, outflow: 15000, balance: 63000 },
-    { date: '2024-06-15', inflow: 25000, outflow: 18000, balance: 70000 },
-    { date: '2024-06-20', inflow: 20000, outflow: 14000, balance: 76000 },
-  ];
+    fetchReports();
+  }, []);
 
   return (
     <div className="flex min-h-screen">
@@ -199,11 +200,11 @@ export default function ReportsPage() {
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₺328,000</div>
+                <div className="text-2xl font-bold">₺{summary.totalRevenue.toLocaleString('tr-TR')}</div>
                 <div className="flex items-center gap-1 text-xs mt-1">
                   <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+15.2%</span>
-                  <span className="text-muted-foreground">geçen döneme göre</span>
+                  <span className="text-green-600">Bu Ay</span>
+                  <span className="text-muted-foreground">gerçek veriler</span>
                 </div>
               </CardContent>
             </Card>
@@ -216,11 +217,11 @@ export default function ReportsPage() {
                 <TrendingDown className="h-4 w-4 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₺193,000</div>
+                <div className="text-2xl font-bold">₺{summary.totalExpenses.toLocaleString('tr-TR')}</div>
                 <div className="flex items-center gap-1 text-xs mt-1">
                   <TrendingDown className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">-8.5%</span>
-                  <span className="text-muted-foreground">geçen döneme göre</span>
+                  <span className="text-green-600">Bu Ay</span>
+                  <span className="text-muted-foreground">gerçek veriler</span>
                 </div>
               </CardContent>
             </Card>
@@ -233,11 +234,11 @@ export default function ReportsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₺135,000</div>
+                <div className="text-2xl font-bold">₺{summary.netProfit.toLocaleString('tr-TR')}</div>
                 <div className="flex items-center gap-1 text-xs mt-1">
                   <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+22.8%</span>
-                  <span className="text-muted-foreground">geçen döneme göre</span>
+                  <span className="text-green-600">Net</span>
+                  <span className="text-muted-foreground">kar/zarar durumu</span>
                 </div>
               </CardContent>
             </Card>
@@ -250,11 +251,11 @@ export default function ReportsPage() {
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">545</div>
+                <div className="text-2xl font-bold">{summary.invoiceCount}</div>
                 <div className="flex items-center gap-1 text-xs mt-1">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">+12.1%</span>
-                  <span className="text-muted-foreground">geçen döneme göre</span>
+                  <FileText className="h-3 w-3 text-blue-600" />
+                  <span className="text-blue-600">Toplam</span>
+                  <span className="text-muted-foreground">kayıtlı fatura</span>
                 </div>
               </CardContent>
             </Card>

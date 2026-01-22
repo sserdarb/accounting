@@ -7,7 +7,8 @@ import { generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, companyName, taxNumber } = body;
+    const { name, email: rawEmail, password, companyName, taxNumber } = body;
+    const email = rawEmail?.toLowerCase().trim();
 
     // Validation
     if (!name || !email || !password || !companyName || !taxNumber) {
